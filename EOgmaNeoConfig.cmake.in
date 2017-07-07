@@ -1,0 +1,24 @@
+# ----------------------------------------------------------------------------
+#  EOgmaNeo
+#  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+#
+#  This copy of EOgmaNeo is licensed to you under the terms described
+#  in the EOGMANEO_LICENSE.md file included in this distribution.
+# ----------------------------------------------------------------------------
+
+# - Config file for the EOgmaNeo package
+# It defines the following variables
+#  EOGMANEO_INCLUDE_DIRS - include directories for EOgmaNeo
+#  EOGMANEO_LIBRARIES    - libraries to link against
+ 
+# Compute paths
+get_filename_component(EOGMANEO_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(EOGMANEO_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+ 
+# Our library dependencies (contains definitions for IMPORTED targets)
+if(NOT TARGET EOgmaNeo AND NOT EOgmaNeo_BINARY_DIR)
+  include("${EOGMANEO_CMAKE_DIR}/EOgmaNeoTargets.cmake")
+endif()
+ 
+# These are IMPORTED targets created by vTargets.cmake
+set(EOGMANEO_LIBRARIES EOgmaNeo)
