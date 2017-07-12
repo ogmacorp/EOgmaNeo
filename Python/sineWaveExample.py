@@ -11,7 +11,7 @@
 import numpy as np
 import eogmaneo
 
-system = eogmaneo.System(4)
+system = eogmaneo.ComputeSystem(4)
 
 chunkSize = 8
 

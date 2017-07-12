@@ -52,7 +52,7 @@ The following example can be used to build the Python package:
 
 or create a wheel file for installation via pip:
 
-> cs EOgmaNeo/Python  
+> cd EOgmaNeo/Python  
 > python3 setup.py bdist_wheel  
 > pip3 install dist/*.whl --user  
 
@@ -64,19 +64,7 @@ The EOgmaNeo Python module can be imported using:
 import eogmaneo
 ```
 
-## OgmaNeo Developers
-
-By default a CMake library configuration is used to find an existing installation of the OgmaNeo library. If it cannot find the library, the CMakeLists.txt file automatically clones the OgmaNeo master repository and builds the library in place.
-
-Two options exist for OgmaNeo library developers that can redirect this process:
-
-- The `CMakeLists.txt` file can be modified locally to point to a fork of an OgmaNeo repository, and also clone a particular branch from a fork. The `GIT_REPOSITORY` line in `CMakeLists.txt` file can be changed to point to a fork location. An additional `GIT_TAG` line can be added to obtain a particular branch from a fork.
-
-- If you require the use of a local clone of OgmaNeo, the `setup.cfg` file can be modified locally to achieve this. An extra line can be added to specify optional CMake arguments.  
-Similar to the following, but with `<repo_dir>` changed to point to your OgmanNeo root directory, or to appropriate system wide locations. This assumes that the OgmaNeo CMAKE_INSTALL_PREFIX has been set to `<repo_dir>/install` and that a `make install` build step has been performed before running the `python setup.py install --user` command. Make sure to use `/` as a path seperator.  
-> [build_ext]  
-> inplace=0  
-> extra-cmake-args=-DOGMANEO_LIBRARY=\<repo_dir\>/install/lib/OgmaNeo.lib -DOGMANEO_INCLUDE_DIR=\<repo_dir\>/install/include  
+Refer to the `sineWaveExample.py` example for further details.
 
 ## Contributions
 
@@ -88,5 +76,4 @@ Refer to the EOgmaNeo [CONTRIBUTING.md](https://github.com/ogmacorp/EOgmaNeo/blo
 
 Contact Ogma via licenses@ogmacorp.com to discuss commercial use and licensing options.
 
-EOgmanNeo Copyright (c) 2017 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.
-
+EOgmaNeo Copyright (c) 2017 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.

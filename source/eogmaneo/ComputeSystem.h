@@ -18,17 +18,18 @@ namespace eogmaneo {
 	/*!
 	\brief Compute system. Mainly passed to other functions. Contains thread pooling and random number generator information.
 	*/
-    class System {
+    class ComputeSystem {
 	private:
 		ThreadPool _pool;
 		std::mt19937 _rng;
+
 	public:
 		/*!
 		\brief Initialize the system.
 		\param numWorkers number of thread pool worker threads.
 		\param seed global random number generator seed. Defaults to 1234.
 		*/
-		System(size_t numWorkers, unsigned long seed = 1234) {
+        ComputeSystem(size_t numWorkers, unsigned long seed = 1234) {
 			_pool.create(numWorkers);
 			_rng.seed(seed);
 		}
@@ -40,7 +41,7 @@ namespace eogmaneo {
 		friend class CornerEncoder;
 		friend class LocalRegressor;
 		
-		friend std::vector<float> whiten(const std::vector<float> &src, int width, int radius, float strength, System &system, int chunkSize);
-        friend std::vector<float> sobel(const std::vector<float> &src, int width, float clip, System &system, int chunkSize);
+		friend std::vector<float> whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &system, int chunkSize);
+        friend std::vector<float> sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &system, int chunkSize);
     };
 }

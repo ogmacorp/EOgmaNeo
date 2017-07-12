@@ -198,7 +198,7 @@ void Hierarchy::save(const std::string &fileName) {
     }
 }
 
-void Hierarchy::step(const std::vector<std::vector<int>> &inputs, System &system, bool learn, float reward) {
+void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem &system, bool learn, float reward) {
     assert(inputs.size() == _numInputs);
 
     _ticks[0] = 0;

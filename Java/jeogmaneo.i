@@ -17,7 +17,7 @@
 %include "std_vector.i"
 
 %{
-#include "System.h"
+#include "ComputeSystem.h"
 #include "Layer.h"
 #include "Hierarchy.h"
 #include "RandomEncoder.h"
@@ -46,21 +46,32 @@
 // Handle operator overloading
 %rename(get) operator();
 
-%include "System.h"
+%include "ComputeSystem.h"
 %include "Layer.h"
 %include "Hierarchy.h"
 %include "RandomEncoder.h"
 %include "CornerEncoder.h"
 %include "Preprocessing.h"
-#ifdef SFML_FOUND
 
+#ifdef SFML_FOUND
 %ignore eogmaneo::SDR;
 %ignore eogmaneo::WeightSet;
 %ignore eogmaneo::Network;
 %ignore eogmaneo::Caret;
-
 %include "VisAdapter.h"
 #endif
+
 #ifdef OPENCV_FOUND
 %include "OpenCVInterop.h"
 #endif
+
+%pragma(java) jniclasscode=%{
+  static {
+    try {
+        java.lang.System.loadLibrary("JEOgmaNeo");
+    } catch (UnsatisfiedLinkError e) {
+      java.lang.System.err.println("Native code library failed to load. \n" + e);
+      java.lang.System.exit(1);
+    }
+  }
+%}
