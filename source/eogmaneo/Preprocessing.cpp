@@ -28,7 +28,7 @@ void SobelCombineWorkItem::run(size_t threadIndex) {
     sobelCombine(*_psrcX, *_psrcY, *_pdest, _width, _clip, _cx, _cy, _chunkSize);
 }
 
-std::vector<float> eogmaneo::whiten(const std::vector<float> &src, int width, int radius, float strength, System &system, int chunkSize) {
+std::vector<float> eogmaneo::whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &system, int chunkSize) {
     std::vector<float> dest(src.size(), 0.0f);
 	
 	int height = src.size() / width;
@@ -113,7 +113,7 @@ void eogmaneo::whiten(const std::vector<float> &src, std::vector<float> &dest, i
         }
 }
 
-std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, float clip, System &system, int chunkSize) {
+std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &system, int chunkSize) {
     std::vector<float> destX(src.size(), 0.0f);
     std::vector<float> destY(src.size(), 0.0f);
     std::vector<float> dest(src.size(), 0.0f);

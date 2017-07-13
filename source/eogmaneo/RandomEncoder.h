@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "System.h"
+#include "ComputeSystem.h"
 
 #include <random>
 
@@ -125,7 +125,7 @@ namespace eogmaneo {
         \param system compute system to be used.
         \param useDistanceMetric whether to activate based on euclidean distance (true) or dot product (false). Defaults to true.
         */
-        const std::vector<int> &activate(const std::vector<float> &input, System &system, bool useDistanceMetric = true);
+        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &system, bool useDistanceMetric = true);
 
         /*!
         \brief Reconstruct (reverse) an encoding.
@@ -133,7 +133,7 @@ namespace eogmaneo {
         \param system compute system to be used.
         \return reconstructed vector.
         */
-        const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, System &system);
+        const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &system);
 
         /*!
         \brief Experimental learning functionality.
@@ -142,7 +142,7 @@ namespace eogmaneo {
         \param gamma bias learning rate.
         \param system compute system to be used.
         */
-        void learn(float alpha, float gamma, System &system);
+        void learn(float alpha, float gamma, ComputeSystem &system);
 
         //!@{
         /*!

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "System.h"
+#include "ComputeSystem.h"
 
 #include <random>
 #include <istream>
@@ -178,7 +178,7 @@ namespace eogmaneo {
         \param system compute system to be used.
         \param alpha feed forward learning rate.
         */
-        void forward(const std::vector<std::vector<int> > &inputs, System &system, float alpha);
+        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &system, float alpha);
 
         /*!
         \brief Backward activation.
@@ -190,7 +190,7 @@ namespace eogmaneo {
         \param gamma Q discount factor.
         \param epsilon Q exploration rate.
         */
-        void backward(const std::vector<std::vector<int> > &feedBack, System &system, float reward, float beta, float delta, float gamma, float epsilon);
+        void backward(const std::vector<std::vector<int> > &feedBack, ComputeSystem &system, float reward, float beta, float delta, float gamma, float epsilon);
 
         //!@{
         /*!

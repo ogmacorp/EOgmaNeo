@@ -87,7 +87,7 @@ void RandomEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int
     _hiddenBiases.resize(hiddenWidth * hiddenHeight, 0.0f);
 }
 
-const std::vector<int> &RandomEncoder::activate(const std::vector<float> &input, System &system, bool useDistanceMetric) {
+const std::vector<int> &RandomEncoder::activate(const std::vector<float> &input, ComputeSystem &system, bool useDistanceMetric) {
 	_input = input;
 	
     int chunksInX = _hiddenWidth / _chunkSize;
@@ -110,7 +110,7 @@ const std::vector<int> &RandomEncoder::activate(const std::vector<float> &input,
     return _hiddenStates;
 }
 
-const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hiddenStates, System &system) {
+const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &system) {
     int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 
@@ -144,7 +144,7 @@ const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hid
     return _recon;
 }
 
-void RandomEncoder::learn(float alpha, float gamma, System &system) {
+void RandomEncoder::learn(float alpha, float gamma, ComputeSystem &system) {
     int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 

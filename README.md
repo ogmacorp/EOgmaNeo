@@ -36,7 +36,7 @@ The simplest usage of the predictive hierarchy involves calling:
 
 ```cpp
     // Compute system
-    eogmaneo::System system(4); // Number of threads to use, e.g. CPU Core count
+    eogmaneo::ComputeSystem system(4); // Number of threads to use, e.g. CPU Core count
 
     eogmaneo::Hierarchy h;
 

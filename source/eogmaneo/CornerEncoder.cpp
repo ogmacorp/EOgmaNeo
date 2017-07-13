@@ -35,7 +35,7 @@ void CornerEncoder::create(int inputWidth, int inputHeight, int chunkSize, int k
     _hiddenScores.resize(inputWidth * inputHeight, 0);
 }
 
-void CornerEncoder::activate(const std::vector<float> &input, System &system, float radius, float thresh, int samples) {
+void CornerEncoder::activate(const std::vector<float> &input, ComputeSystem &system, float radius, float thresh, int samples) {
     _input = input;
 
     _radius = radius;

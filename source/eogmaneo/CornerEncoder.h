@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "System.h"
+#include "ComputeSystem.h"
 
 #include <random>
 
@@ -84,7 +84,7 @@ namespace eogmaneo {
         \param thresh threshold of the corner detector.
         \param samples number of samples around the radius.
         */
-        void activate(const std::vector<float> &input, System &system, float radius, float thresh, int samples);
+        void activate(const std::vector<float> &input, ComputeSystem &system, float radius, float thresh, int samples);
 
         //!@{
         /*!

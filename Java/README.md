@@ -53,6 +53,21 @@ The EOgmaNeo Java(JNI) module can be imported into Java code using:
 import com.ogmacorp.eogmaneo.*;
 ```
 
+Refer to the `src/com/ogmacorp/sineWaveExample.java` example for further details.
+
+## IntelliJ setup for sineWaveExample
+
+- Start the `Create New Project` wizard
+  - Select `Project SDK` (JDK location)
+  - `Project name`: sineWaveExample
+  - `Project location`: <repo_dir>/Java/
+- Copy EOgmaNeo Jar and JEOgmaNeo library file into <repo_dir>/Java/
+- Edit the `Project Structure...`
+  - Add EOgmaNeo.jar as a Dependency in `Project Settings` -> `Modules`
+- Execute `Build Project`
+- Use the `Run/Debug Configuration` wizard to create a configuration based upon the `Application` default
+  - Setting `Main Class` as sineWaveExample
+
 ## Contributions
 
 Refer to the EOgmaNeo [CONTRIBUTING.md](https://github.com/ogmacorp/EOgmaNeo/blob/master/CONTRIBUTING.md) file for details about contributing to EOgmaNeo, including the signing of the [Ogma Contributor Agreement](https://ogma.ai/wp-content/uploads/2016/09/OgmaContributorAgreement.pdf).
@@ -63,4 +78,4 @@ Refer to the EOgmaNeo [CONTRIBUTING.md](https://github.com/ogmacorp/EOgmaNeo/blo
 
 Contact Ogma via licenses@ogmacorp.com to discuss commercial use and licensing options.
 
-EOgmanNeo Copyright (c) 2017 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.
+EOgmaNeo Copyright (c) 2017 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.
