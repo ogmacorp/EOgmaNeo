@@ -17,7 +17,7 @@
 %include "std_vector.i"
 
 %{
-#include "System.h"
+#include "ComputeSystem.h"
 #include "Layer.h"
 #include "Hierarchy.h"
 #include "RandomEncoder.h"
@@ -43,7 +43,7 @@
 %ignore eogmaneo::ForwardWorkItem;
 %ignore eogmaneo::BackwardWorkItem;
 
-%include "System.h"
+%include "ComputeSystem.h"
 %include "Layer.h"
 %include "Hierarchy.h"
 %include "RandomEncoder.h"

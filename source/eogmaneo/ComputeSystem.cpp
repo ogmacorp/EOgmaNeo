@@ -6,6 +6,6 @@
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
 // ----------------------------------------------------------------------------
 
-#include "System.h"
+#include "ComputeSystem.h"
 
 using namespace eogmaneo;

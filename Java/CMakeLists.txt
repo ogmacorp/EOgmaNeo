@@ -47,31 +47,31 @@ endif()
 ############################################################################
 # Add the EOgmaNeo library
 
-set(EOGMANEO_INCLUDE_DIR "../source/eogmaneo;../source/optional")
-
-include_directories(${EOGMANEO_INCLUDE_DIR})
+set(EOGMANEO_INCLUDE_DIRS "../source/eogmaneo;../source/optional")
 
 file(GLOB_RECURSE EOGMANEO_SRC
     "../source/eogmaneo/*.h"
     "../source/eogmaneo/*.cpp"
 )
 if(SFML_FOUND)
-  file(GLOB_RECURSE EOGMANEO_SFML_SRC "../source/optional/VisAdapter.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_SFML_SRC})
+    file(GLOB_RECURSE EOGMANEO_SFML_SRC "../source/optional/VisAdapter.*")
+    list(APPEND EOGMANEO_SRC ${EOGMANEO_SFML_SRC})
 endif()
 if(OpenCV_FOUND)
-  file(GLOB_RECURSE EOGMANEO_OPENCV_SRC "../source/optional/OpenCVInterop.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_OPENCV_SRC})
+    file(GLOB_RECURSE EOGMANEO_OPENCV_SRC "../source/optional/OpenCVInterop.*")
+    list(APPEND EOGMANEO_SRC ${EOGMANEO_OPENCV_SRC})
 endif()
 
 add_library(EOgmaNeo ${EOGMANEO_SRC})
 
 if(SFML_FOUND)
-  target_link_libraries(EOgmaNeo ${SFML_LIBRARIES})
+    target_link_libraries(EOgmaNeo ${SFML_LIBRARIES})
 endif()
 if(OpenCV_FOUND)
     target_link_libraries(EOgmaNeo ${OpenCV_LIBS})
 endif()
+
+include_directories(${EOGMANEO_INCLUDE_DIRS})
 
 
 ############################################################################
@@ -137,5 +137,5 @@ add_custom_command(
     COMMAND ${Java_JAR_EXECUTABLE} cfM EOgmaNeo.jar -C classes .
     COMMAND cmake -E echo "Copying EOgmaNeo library"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:EOgmaNeo> "${CMAKE_BINARY_DIR}"
+        $<TARGET_FILE:JEOgmaNeo> "${CMAKE_BINARY_DIR}"
 )

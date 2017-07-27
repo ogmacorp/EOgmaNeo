@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Layer.h"
-#include "System.h"
+#include "ComputeSystem.h"
 
 namespace eogmaneo {
     /*!
@@ -146,7 +146,7 @@ namespace eogmaneo {
         \param learn whether learning should be enabled, defaults to true.
         \param reward reinforcement signal, defaults to 0.
         */
-        void step(const std::vector<std::vector<int> > &inputs, System &system, bool learn = true, float reward = 0.0f);
+        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &system, bool learn = true, float reward = 0.0f);
 
         /*!
         \brief Get the number of (hidden) layers.

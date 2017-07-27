@@ -726,7 +726,7 @@ void Layer::writeToStream(std::ostream &s) {
     }
 }
 
-void Layer::forward(const std::vector<std::vector<int>> &inputs, System &system, float alpha) {
+void Layer::forward(const std::vector<std::vector<int>> &inputs, ComputeSystem &system, float alpha) {
     _inputsPrev = _inputs;
     _inputs = inputs;
 
@@ -755,7 +755,7 @@ void Layer::forward(const std::vector<std::vector<int>> &inputs, System &system,
     system._pool.wait();
 }
 
-void Layer::backward(const std::vector<std::vector<int>> &feedBack, System &system, float reward, float beta, float delta, float gamma, float epsilon) {
+void Layer::backward(const std::vector<std::vector<int>> &feedBack, ComputeSystem &system, float reward, float beta, float delta, float gamma, float epsilon) {
     _feedBackPrev = _feedBack;
 	_feedBack = feedBack;
 

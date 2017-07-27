@@ -101,10 +101,10 @@ The fourth parameter is simply the list of layer descs.
 
 Finally, the fifth parameter is a seed for the internal random number generator.
 
-We will also need a System object, which contains a thread pool. Simply create one with your desired thread count (typically the number of cores your machine has):
+We will also need a ComputeSystem object, which contains a thread pool. Simply create one with your desired thread count (typically the number of cores your machine has):
 
 ```python
-system = eogmaneo.System(4)
+system = eogmaneo.ComputeSystem(4)
 ```
 
 Now that we have a hierarchy, we can present it with our sine wave sequence using the encoding method shown previously:
