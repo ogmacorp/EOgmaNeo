@@ -97,10 +97,10 @@ namespace eogmaneo {
     \param width width of the image.
     \param radius radius of the whitening kernel.
     \param strength intensity of the whitening.
-    \param system compute system to be used.
+    \param cs compute system to be used.
     \param chunkSize diameter of a chunk of computation (for performance only, unlike for the main portion of this library).
     */
-    std::vector<float> whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &system, int chunkSize);
+    std::vector<float> whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &cs, int chunkSize);
 
     void whiten(const std::vector<float> &src, std::vector<float> &dest, int width, int radius, float strength, int cx, int cy, int chunkSize);
 
@@ -109,10 +109,10 @@ namespace eogmaneo {
     \param src source image.
     \param width width of the image.
     \param clip used to rescale results into [clip, 1] range (with clamping).
-    \param system compute system to be used.
+    \param cs compute system to be used.
     \param chunkSize diameter of a chunk of computation (for performance only, unlike for the main portion of this library).
     */
-    std::vector<float> sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &system, int chunkSize);
+    std::vector<float> sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &cs, int chunkSize);
     
     void sobelX(const std::vector<float> &src, std::vector<float> &dest, int width, int cx, int cy, int chunkSize);
     void sobelY(const std::vector<float> &src, std::vector<float> &dest, int width, int cx, int cy, int chunkSize);

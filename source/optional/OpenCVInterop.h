@@ -9,6 +9,7 @@
 #pragma once
 
 #include <vector>
+#include "opencv2/features2d.hpp"
 
 namespace eogmaneo {
     class OpenCVInterop
@@ -67,5 +68,11 @@ namespace eogmaneo {
         void LineSegmentDetector(
             std::vector<float>& data, int width, int height, int chunkSize,
             std::vector<int>& rotationSDR, bool drawLines = false);
+
+        /* Fast Feature Detector */
+        void FastFeatureDetector(
+            std::vector<float>& data, int width, int height, int chunkSize,
+            std::vector<int>& featuresSDR, bool drawKeypoints, int threshold,
+            int type = cv::FastFeatureDetector::TYPE_5_8, bool nonmaxSuppression = true);
     };
 }

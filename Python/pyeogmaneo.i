@@ -20,9 +20,11 @@
 #include "ComputeSystem.h"
 #include "Layer.h"
 #include "Hierarchy.h"
+#include "Preprocessing.h"
+#ifdef BUILD_PREENCODERS
 #include "RandomEncoder.h"
 #include "CornerEncoder.h"
-#include "Preprocessing.h"
+#endif
 #ifdef SFML_FOUND
 #include "VisAdapter.h"
 #endif
@@ -57,18 +59,20 @@
 %include "ComputeSystem.h"
 %include "Layer.h"
 %include "Hierarchy.h"
+%include "Preprocessing.h"
+#ifdef BUILD_PREENCODERS
 %include "RandomEncoder.h"
 %include "CornerEncoder.h"
-%include "Preprocessing.h"
-#ifdef SFML_FOUND
+#endif
 
+#ifdef SFML_FOUND
 %ignore eogmaneo::SDR;
 %ignore eogmaneo::WeightSet;
 %ignore eogmaneo::Network;
 %ignore eogmaneo::Caret;
-
 %include "VisAdapter.h"
 #endif
+
 #ifdef OPENCV_FOUND
 %include "OpenCVInterop.h"
 #endif

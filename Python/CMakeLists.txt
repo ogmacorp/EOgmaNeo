@@ -19,7 +19,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 else()
   set(BITNESS 32)
 endif()
-message("Bitness: ${BITNESS}")
+message(STATUS "Bitness: ${BITNESS}")
 
 if(NOT CMAKE_BUILD_TYPE)
     message("CMAKE_BUILD_TYPE not set, setting it to Release")
@@ -30,6 +30,9 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 if(PYTHON_VERSION)
     message("Python target version: ${PYTHON_VERSION}")            
 endif()
+
+option(BUILD_PREENCODERS OFF)
+message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
 
 
 ############################################################################
@@ -65,6 +68,15 @@ file(GLOB_RECURSE EOGMANEO_SRC
     "../source/eogmaneo/*.h"
     "../source/eogmaneo/*.cpp"
 )
+
+if (BUILD_PREENCODERS)
+  file(GLOB_RECURSE EOGMANEO_CORNERENCODER_SRC "../source/optional/CornerEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_CORNERENCODER_SRC})
+
+  file(GLOB_RECURSE EOGMANEO_RANDOMENCODER_SRC "../source/optional/RandomEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_RANDOMENCODER_SRC})
+endif()
+
 if(SFML_FOUND)
   file(GLOB_RECURSE EOGMANEO_SFML_SRC "../source/optional/VisAdapter.*")
   list(APPEND EOGMANEO_SRC ${EOGMANEO_SFML_SRC})
@@ -189,6 +201,10 @@ include_directories(${PYTHON_INCLUDE_DIR})
 set(CMAKE_SWIG_OUTDIR "${CMAKE_BINARY_DIR}")
 set(CMAKE_SWIG_FLAGS "-I\"${PYTHON_INCLUDE_DIR}\" -I\"${EOGMANEO_INCLUDE_DIR}\"")
 
+if(BUILD_PREENCODERS)
+  list(APPEND CMAKE_SWIG_FLAGS -DBUILD_PREENCODERS)
+  add_definitions(-DBUILD_PREENCODERS)
+endif()
 if(SFML_FOUND)
   list(APPEND CMAKE_SWIG_FLAGS -DSFML_FOUND)
   add_definitions(-DSFML_FOUND)

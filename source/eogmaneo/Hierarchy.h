@@ -69,19 +69,14 @@ namespace eogmaneo {
         float _gamma;
 
         /*!
+        \brief Q trace cutoff value (minimum trace strength).
+        */
+        float _traceCutoff;
+
+        /*!
         \brief Q exploration rate (decoder).
         */
         float _epsilon;
-        
-        /*!
-        \brief Maximum number of samples stored for replay.
-        */
-        int _maxReplaySamples;
-
-        /*!
-        \brief Iterations over replay buffer per layer tick.
-        */
-        int _replayIter;
         
         /*!
         \brief Initialize defaults.
@@ -90,8 +85,7 @@ namespace eogmaneo {
 			: _width(36), _height(36), _chunkSize(6),
 			_forwardRadius(9), _backwardRadius(9),
 			_ticksPerUpdate(2), _temporalHorizon(2),
-			_alpha(0.1f), _beta(0.02f), _delta(0.01f), _gamma(0.99f), _epsilon(0.01f),
-			_maxReplaySamples(200), _replayIter(4)
+			_alpha(0.01f), _beta(0.05f), _delta(0.0f), _gamma(0.99f), _traceCutoff(0.01f), _epsilon(0.01f)
 		{}
 	};
 
@@ -108,6 +102,7 @@ namespace eogmaneo {
         std::vector<float> _betas;
         std::vector<float> _deltas;
         std::vector<float> _gammas;
+        std::vector<float> _traceCutoffs;
         std::vector<float> _epsilons;
 
         std::vector<int> _ticks;
@@ -142,11 +137,11 @@ namespace eogmaneo {
         /*!
         \brief Simulation tick.
         \param inputs vector of SDR vectors in chunked format.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         \param learn whether learning should be enabled, defaults to true.
         \param reward reinforcement signal, defaults to 0.
         */
-        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &system, bool learn = true, float reward = 0.0f);
+        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true, float reward = 0.0f);
 
         /*!
         \brief Get the number of (hidden) layers.

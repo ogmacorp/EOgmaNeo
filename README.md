@@ -130,11 +130,14 @@ Currently it contains a handful of calls into the following OpenCV C++ functions
 - [Threshold](http://docs.opencv.org/3.2.0/d7/d1b/group__imgproc__misc.html#gae8a4a146d1ca78c626a53577199e9c57)
 - [AdaptiveThreshold](http://docs.opencv.org/3.2.0/d7/d1b/group__imgproc__misc.html#ga72b913f352e4a1b1b397736707afcde3)
 - [GaborFilter](http://docs.opencv.org/3.2.0/d4/d86/group__imgproc__filter.html#gae84c92d248183bd92fa713ce51cc3599) (cv::filter2D)
-- [LineSegmentDetector](http://docs.opencv.org/3.2.0/dd/d1a/group__imgproc__feature.html#ga6b2ad2353c337c42551b521a73eeae7d)
+- [LineSegmentDetector](http://docs.opencv.org/3.2.0/dd/d1a/group__imgproc__feature.html#ga6b2ad2353c337c42551b521a73eeae7d) SDR pre-encoder
+- [FastFeatureDetector](http://docs.opencv.org/3.2.0/d5/d51/group__features2d__main.html#gaf3185c9bd7496ba7a629add75fb371ad) SDR pre-encoder
 
-Beaware that all these functions contain certain remapping of input arrays into OpenCV Mat types, with appropriate remapping when results are output. Refer to the OpenCVInterop.cpp file to see what input and output mappings occur, and what value ranges are expected in the input array(s).
+Be aware that all these functions contain certain remapping of input arrays into OpenCV Mat types, with appropriate remapping when results are output. Refer to the OpenCVInterop.cpp file to see what input and output mappings occur, and what value ranges are expected in the input array(s).
 
-**Note:** The LineSegmentDetector contains extra functionality that takes detected lines and forms them into a sparse chunked representation as it's output. Therefore, the LineSegmentDetector acts as a pre-encoder for an EOgmaNeo hierarchy.
+**Note:** The `LineSegmentDetector` contains extra functionality that takes detected lines and forms them into a sparse chunked representation as it's output. Therefore, the LineSegmentDetector acts as a pre-encoder for an EOgmaNeo hierarchy.
+
+**Note:** Similar to the `LineSegmentDetector`, the `FastFeatureDetector` contains extra functionality that takes detected corner keypoints and forms them into a sparse chunked representation as its output. Therefore, it acts as a pre-encoder for an EOgmaNeo hierarchy.
 
 ## Requirements
 
@@ -160,8 +163,11 @@ The following commands can be used to build the EOgmaNeo library:
 > cmake -DBUILD_SHARED_LIBS=ON ..  
 > make  
 
-The `cmake` command can be passed a `CMAKE_INSTALL_PREFIX` to determine where to install the library and header files.  
-The `BUILD_SHARED_LIBS` boolean cmake option can be used to create dynamic/shared object library (default is to create a _static_ library).
+The `cmake` command can be passed the following optional settings:
+
+- `CMAKE_INSTALL_PREFIX` to determine where to install the library and header files.
+- `BUILD_SHARED_LIBS` boolean CMake option can be used to create dynamic/shared object library (default is to create a _static_ library).
+- `BUILD_PREENCODERS` to include the Random and Corner pre-encoders into the library.
 
 `make install` can be run to install the library. `make uninstall` can be used to uninstall the library.
 

@@ -28,7 +28,7 @@ void SobelCombineWorkItem::run(size_t threadIndex) {
     sobelCombine(*_psrcX, *_psrcY, *_pdest, _width, _clip, _cx, _cy, _chunkSize);
 }
 
-std::vector<float> eogmaneo::whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &system, int chunkSize) {
+std::vector<float> eogmaneo::whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &cs, int chunkSize) {
     std::vector<float> dest(src.size(), 0.0f);
 	
 	int height = src.size() / width;
@@ -49,10 +49,10 @@ std::vector<float> eogmaneo::whiten(const std::vector<float> &src, int width, in
 			item->_strength = strength;
 			item->_chunkSize = chunkSize;
 
-			system._pool.addItem(item);
+			cs._pool.addItem(item);
 		}
 		
-	system._pool.wait();
+	cs._pool.wait();
 	
 	return dest;
 }
@@ -113,7 +113,7 @@ void eogmaneo::whiten(const std::vector<float> &src, std::vector<float> &dest, i
         }
 }
 
-std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &system, int chunkSize) {
+std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &cs, int chunkSize) {
     std::vector<float> destX(src.size(), 0.0f);
     std::vector<float> destY(src.size(), 0.0f);
     std::vector<float> dest(src.size(), 0.0f);
@@ -136,7 +136,7 @@ std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, flo
                 item->_width = width;
                 item->_chunkSize = chunkSize;
 
-                system._pool.addItem(item);
+                cs._pool.addItem(item);
             }
 
             // Y
@@ -150,11 +150,11 @@ std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, flo
                 item->_width = width;
                 item->_chunkSize = chunkSize;
 
-                system._pool.addItem(item);
+                cs._pool.addItem(item);
             }
         }
 
-    system._pool.wait();
+    cs._pool.wait();
 
     for (int cx = 0; cx < chunksInX; cx++)
         for (int cy = 0; cy < chunksInY; cy++) {
@@ -169,10 +169,10 @@ std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, flo
             item->_clip = clip;
             item->_chunkSize = chunkSize;
 
-            system._pool.addItem(item);
+            cs._pool.addItem(item);
         }
 
-    system._pool.wait();
+    cs._pool.wait();
 
     return dest;
 }
