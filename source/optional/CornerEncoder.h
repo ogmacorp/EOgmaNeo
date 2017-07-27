@@ -79,12 +79,12 @@ namespace eogmaneo {
         /*!
         \brief Activate (encoded) from an image.
         \param input the raveled input image.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         \param radius radius of the corner detector.
         \param thresh threshold of the corner detector.
         \param samples number of samples around the radius.
         */
-        void activate(const std::vector<float> &input, ComputeSystem &system, float radius, float thresh, int samples);
+        void activate(const std::vector<float> &input, ComputeSystem &cs, float radius, float thresh, int samples);
 
         //!@{
         /*!

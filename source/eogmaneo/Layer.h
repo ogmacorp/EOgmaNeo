@@ -13,8 +13,14 @@
 #include <random>
 #include <istream>
 #include <ostream>
+#include <unordered_map>
 
 namespace eogmaneo {
+    /*!
+    \brief Sigmoid function.
+    */
+    float sigmoid(float x);
+
     /*!
     \brief Forward work item, for internal use only.
     */
@@ -92,18 +98,7 @@ namespace eogmaneo {
 			_predict(true)
 		{}
 	};
-    
-    /*!
-    \brief A replay sample. For internal use.
-    */
-    struct ReplaySample {
-        std::vector<std::vector<int> > _predictionsPrev;
 
-        std::vector<std::vector<int> > _feedBackPrev;
-
-        float _reward;
-    };
-	
     /*!
     \brief A layer in the hierarchy.
     */
@@ -115,15 +110,19 @@ namespace eogmaneo {
 
         std::vector<int> _hiddenStates;
         std::vector<int> _hiddenStatesPrev;
-        
+
         std::vector<std::vector<float> > _feedForwardWeights;
 
         std::vector<VisibleLayerDesc> _visibleLayerDescs;
+
+        std::vector<std::vector<float>> _predictionActivations;
+        std::vector<std::vector<float>> _predictionActivationsPrev;
 
         std::vector<std::vector<int>> _predictions;
         std::vector<std::vector<int>> _predictionsPrev;
 
         std::vector<std::vector<std::vector<float> > > _feedBackWeights;
+        std::vector<std::vector<std::unordered_map<int, float> > > _feedBackTraces;
 
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;
@@ -135,32 +134,14 @@ namespace eogmaneo {
         float _beta;
         float _delta;
         float _gamma;
+        float _traceCutoff;
         float _epsilon;
         float _reward;
-        
-        std::vector<ReplaySample> _replaySamples;
 
         void createFromStream(std::istream &s);
         void writeToStream(std::ostream &s);
 
-    public:
-        /*!
-        \brief Maximum number of samples stored for replay.
-        */
-        int _maxReplaySamples;
-
-        /*!
-        \brief Iterations over replay buffer per layer tick.
-        */
-        int _replayIter;
-        
-        /*!
-        \brief Initialize defaults.
-        */
-        Layer()
-            : _maxReplaySamples(100), _replayIter(4)
-        {}
-        
+    public:  
         /*!
         \brief Create a layer.
         \param hiddenWidth width of the layer.
@@ -175,22 +156,23 @@ namespace eogmaneo {
         /*!
         \brief Forward activation.
         \param inputs vector of input SDRs in chunked format.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         \param alpha feed forward learning rate.
         */
-        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &system, float alpha);
+        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, float alpha);
 
         /*!
         \brief Backward activation.
         \param feedBack vector of feedback SDRs in chunked format.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         \param reward reinforcement signal.
         \param beta feedback learning rate.
-        \param delta Q learning rate.
+        \param delta Q learning rate (0.0f disables reinforcement learning).
         \param gamma Q discount factor.
+        \param traceCutoff minimum eligibility trace strength before the trace is removed.
         \param epsilon Q exploration rate.
         */
-        void backward(const std::vector<std::vector<int> > &feedBack, ComputeSystem &system, float reward, float beta, float delta, float gamma, float epsilon);
+        void backward(const std::vector<std::vector<int> > &feedBack, ComputeSystem &cs, float reward, float beta, float delta, float gamma, float traceCutoff, float epsilon);
 
         //!@{
         /*!

@@ -122,27 +122,27 @@ namespace eogmaneo {
         /*!
         \brief Activate the encoder from an input (compute hidden states, perform encoding).
         \param input input vector/image.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         \param useDistanceMetric whether to activate based on euclidean distance (true) or dot product (false). Defaults to true.
         */
-        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &system, bool useDistanceMetric = true);
+        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs, bool useDistanceMetric = true);
 
         /*!
         \brief Reconstruct (reverse) an encoding.
         \param hiddenStates hidden state vector in chunked format.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         \return reconstructed vector.
         */
-        const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &system);
+        const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs);
 
         /*!
         \brief Experimental learning functionality.
         Requires that reconstruct(...) has been called, without another call to activate(...).
         \param alpha weight learning rate.
         \param gamma bias learning rate.
-        \param system compute system to be used.
+        \param cs compute system to be used.
         */
-        void learn(float alpha, float gamma, ComputeSystem &system);
+        void learn(float alpha, float gamma, ComputeSystem &cs);
 
         //!@{
         /*!
