@@ -678,7 +678,7 @@ void Layer::writeToStream(std::ostream &s) {
 
                         s << std::endl;
 
-                        s << _feedBackWeights[v][i].size() << std::endl;
+                        s << _feedBackTraces[v][i].size() << std::endl;
 
                         for (std::unordered_map<int, float>::const_iterator cit = _feedBackTraces[v][i].begin(); cit != _feedBackTraces[v][i].end(); cit++)
                             s << cit->first << " " << cit->second << " ";

@@ -1,3 +1,9 @@
+1.1.1 July, 2017
+================
+
+- Reward averaging
+- Save/load bug fix
+
 1.1  July, 2017
 ===============
 
