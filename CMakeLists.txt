@@ -13,18 +13,12 @@ project(EOgmaNeo)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 set(EOGMANEO_MAJOR_VERSION 1)
-set(EOGMANEO_MINOR_VERSION 0)
-set(EOGMANEO_PATCH_VERSION 1)
+set(EOGMANEO_MINOR_VERSION 1)
+set(EOGMANEO_PATCH_VERSION 0)
 set(EOGMANEO_VERSION
   ${EOGMANEO_MAJOR_VERSION}.${EOGMANEO_MINOR_VERSION}.${EOGMANEO_PATCH_VERSION})
  
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
-
-if(NOT CMAKE_BUILD_TYPE)
-    message("CMAKE_BUILD_TYPE not set, setting it to Release")
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(BITNESS 64)
@@ -33,8 +27,17 @@ else()
 endif()
 message(STATUS "Bitness: ${BITNESS}")
 
+if(NOT CMAKE_BUILD_TYPE)
+    message("CMAKE_BUILD_TYPE not set, setting it to Release")
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 option(BUILD_SHARED_LIBS OFF)
 message(STATUS "Shared libs: ${BUILD_SHARED_LIBS}")
+
+option(BUILD_PREENCODERS OFF)
+message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
 
 
 ############################################################################
@@ -70,6 +73,15 @@ file(GLOB_RECURSE EOGMANEO_SRC
     "source/eogmaneo/*.h"
     "source/eogmaneo/*.cpp"
 )
+
+if (BUILD_PREENCODERS)
+  file(GLOB_RECURSE EOGMANEO_CORNERENCODER_SRC "source/optional/CornerEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_CORNERENCODER_SRC})
+
+  file(GLOB_RECURSE EOGMANEO_RANDOMENCODER_SRC "source/optional/RandomEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_RANDOMENCODER_SRC})
+endif()
+
 if(SFML_FOUND)
   file(GLOB_RECURSE EOGMANEO_SFML_SRC "source/optional/VisAdapter.*")
   list(APPEND EOGMANEO_SRC ${EOGMANEO_SFML_SRC})

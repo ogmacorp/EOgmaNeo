@@ -12,6 +12,7 @@
 #include "OpenCVInterop.h"
 #include "opencv2/imgproc.hpp"
 
+
 int eogmaneo::OpenCVInterop::CannyEdgeDetection(
     std::vector<float>& data,
     float threshold1, float threshold2,
@@ -191,4 +192,73 @@ void eogmaneo::OpenCVInterop::LineSegmentDetector(
             }
         }
     }
+}
+
+
+// FAST - Detects corners using the FAST algorithm [Rosten06].
+// Ref: Rosten, Machine Learning for High - speed Corner Detection, 2006.
+//
+// void FAST(InputArray image, vector<KeyPoint>& keypoints, int threshold, bool nonmaxSuppression = true)
+// Parameters :
+//    image – grayscale image where keypoints(corners) are detected.
+//    keypoints – keypoints detected on the image.
+//    threshold – threshold on difference between intensity of the central pixel and pixels of a circle around this pixel.
+//    nonmaxSuppression – if true, non - maximum suppression is applied to detected corners(keypoints).
+//    type – one of the three neighborhoods as defined in the paper : FastFeatureDetector::TYPE_9_16, FastFeatureDetector::TYPE_7_12, FastFeatureDetector::TYPE_5_8
+
+void eogmaneo::OpenCVInterop::FastFeatureDetector(
+    std::vector<float>& data, int width, int height, int chunkSize,
+    std::vector<int>& featuresSDR, bool drawKeypoints, 
+    int threshold, int type, bool nonmaxSuppression)
+{
+    // data contains float values [0.0 .. 1.0]
+    cv::Mat dataMat(cv::Size(width, height), CV_32F, data.data());
+
+    cv::Mat img_in;
+    dataMat.convertTo(img_in, CV_8U, 255.0f);
+
+    cv::GaussianBlur(img_in, img_in, cv::Size(3, 3), 0.0, 0.0);
+
+    std::vector<cv::KeyPoint> keypoints;
+
+    cv::FAST(img_in, keypoints, threshold, nonmaxSuppression, type);
+
+    if (drawKeypoints) {
+        // Show found lines
+        cv::Mat img_out = img_in.clone();
+        cv::drawKeypoints(img_in, keypoints, img_out);
+
+        // Reverse any channel expansion
+        cv::cvtColor(img_out, img_out, CV_BGR2GRAY);
+
+        // Overwrite input image data
+        cv::Mat outMat;
+        img_out.convertTo(outMat, CV_32FC1, 1.0f / 255.0f);
+        outMat = outMat.reshape(0, 1);
+
+        memcpy(data.data(), outMat.ptr<float>(0), width * height * sizeof(float));
+    }
+
+    // Zero feature SDR bits
+    featuresSDR.assign(featuresSDR.size(), 0);
+
+    // Assign keypoints to SDR
+    if (keypoints.size() > 0) {
+        int numChunksInX = (int)(width / chunkSize);
+        int numChunksInY = (int)(height / chunkSize);
+        int bitsPerChunk = chunkSize * chunkSize;
+
+        for (cv::KeyPoint l : keypoints) {
+            cv::Point2f p = l.pt;
+
+            // Fill
+            int cx = std::min<int>(numChunksInX - 1, std::max<int>(0, int(p.x / chunkSize)));
+            int cy = std::min<int>(numChunksInY - 1, std::max<int>(0, int(p.y / chunkSize)));
+
+            int chunkIndex = cx + cy * numChunksInX;
+
+            featuresSDR[chunkIndex] = std::min<int>(bitsPerChunk - 1, featuresSDR[chunkIndex] + 1);
+        }
+    }
+
 }

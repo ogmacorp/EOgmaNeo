@@ -87,7 +87,7 @@ void RandomEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int
     _hiddenBiases.resize(hiddenWidth * hiddenHeight, 0.0f);
 }
 
-const std::vector<int> &RandomEncoder::activate(const std::vector<float> &input, ComputeSystem &system, bool useDistanceMetric) {
+const std::vector<int> &RandomEncoder::activate(const std::vector<float> &input, ComputeSystem &cs, bool useDistanceMetric) {
 	_input = input;
 	
     int chunksInX = _hiddenWidth / _chunkSize;
@@ -102,15 +102,15 @@ const std::vector<int> &RandomEncoder::activate(const std::vector<float> &input,
 			item->_pEncoder = this;
 			item->_useDistanceMetric = useDistanceMetric;
 
-			system._pool.addItem(item);
+			cs._pool.addItem(item);
         }
 		
-	system._pool.wait();
+	cs._pool.wait();
 
     return _hiddenStates;
 }
 
-const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &system) {
+const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs) {
     int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 
@@ -130,12 +130,12 @@ const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hid
 			item->_cy = cy;
 			item->_pEncoder = this;
 
-			system._pool.addItem(item);*/
+			cs._pool.addItem(item);*/
 
             reconstruct(cx, cy);
         }
 		
-	//system._pool.wait();
+	//cs._pool.wait();
 	
 	// Rescale
 	for (int i = 0; i < _recon.size(); i++)
@@ -144,7 +144,7 @@ const std::vector<float> &RandomEncoder::reconstruct(const std::vector<int> &hid
     return _recon;
 }
 
-void RandomEncoder::learn(float alpha, float gamma, ComputeSystem &system) {
+void RandomEncoder::learn(float alpha, float gamma, ComputeSystem &cs) {
     int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 
@@ -158,10 +158,10 @@ void RandomEncoder::learn(float alpha, float gamma, ComputeSystem &system) {
             item->_alpha = alpha;
             item->_gamma = gamma;
 
-            system._pool.addItem(item);
+            cs._pool.addItem(item);
         }
 
-    system._pool.wait();
+    cs._pool.wait();
 }
 
 void RandomEncoder::activate(int cx, int cy, bool useDistanceMetric) {

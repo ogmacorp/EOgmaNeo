@@ -28,6 +28,7 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
     _betas.resize(layerDescs.size());
     _deltas.resize(layerDescs.size());
     _gammas.resize(layerDescs.size());
+    _traceCutoffs.resize(layerDescs.size());
     _epsilons.resize(layerDescs.size());
 
 	_inputTemporalHorizon = layerDescs.front()._temporalHorizon;
@@ -42,6 +43,7 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
         _betas[l] = layerDescs[l]._beta;
         _deltas[l] = layerDescs[l]._delta;
         _gammas[l] = layerDescs[l]._gamma;
+        _traceCutoffs[l] = layerDescs[l]._traceCutoff;
         _epsilons[l] = layerDescs[l]._epsilon;
 
         std::vector<VisibleLayerDesc> visibleLayerDescs;
@@ -86,9 +88,6 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
         }
 		
         _layers[l].create(layerDescs[l]._width, layerDescs[l]._height, layerDescs[l]._chunkSize, l < layerDescs.size() - 1, visibleLayerDescs, seed + l + 1);
-        
-        _layers[l]._maxReplaySamples = layerDescs[l]._maxReplaySamples;
-        _layers[l]._replayIter = layerDescs[l]._replayIter;
     }
 }
 
@@ -113,6 +112,7 @@ bool Hierarchy::load(const std::string &fileName) {
     _betas.resize(numLayers);
     _deltas.resize(numLayers);
     _gammas.resize(numLayers);
+    _traceCutoffs.resize(numLayers);
     _epsilons.resize(numLayers);
 
 	s >> _inputTemporalHorizon;
@@ -138,7 +138,7 @@ bool Hierarchy::load(const std::string &fileName) {
 
         _ticksPerUpdate[l] = l == 0 ? 1 : ticksPerUpdate; // First layer always 1
 
-        s >> _alphas[l] >> _betas[l] >> _deltas[l] >> _gammas[l] >> _epsilons[l];
+        s >> _alphas[l] >> _betas[l] >> _deltas[l] >> _gammas[l] >> _traceCutoffs[l] >> _epsilons[l];
 
         _layers[l].createFromStream(s);
 
@@ -179,7 +179,7 @@ void Hierarchy::save(const std::string &fileName) {
 
         s << temporalHorizon << " " << _ticksPerUpdate[l] << std::endl;
 
-        s << _alphas[l] << " " << _betas[l] << " " << _deltas[l] << " " << _gammas[l] << " " << _epsilons[l] << std::endl;
+        s << _alphas[l] << " " << _betas[l] << " " << _deltas[l] << " " << _gammas[l] << " " << _traceCutoffs[l] << " " << _epsilons[l] << std::endl;
 
         _layers[l].writeToStream(s);
 
@@ -198,7 +198,7 @@ void Hierarchy::save(const std::string &fileName) {
     }
 }
 
-void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem &system, bool learn, float reward) {
+void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem &cs, bool learn, float reward) {
     assert(inputs.size() == _numInputs);
 
     _ticks[0] = 0;
@@ -224,7 +224,7 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
 
             update[l] = true;
 
-            _layers[l].forward(_histories[l], system, learn ? _alphas[l] : 0.0f);
+            _layers[l].forward(_histories[l], cs, learn ? _alphas[l] : 0.0f);
 
             // Add to next layer's history
             if (l < _layers.size() - 1) {
@@ -252,7 +252,7 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
             else
                 feedBack = { _layers[l]._hiddenStates };
 
-            _layers[l].backward(feedBack, system, reward, learn ? _betas[l] : 0.0f, learn ? _deltas[l] : 0.0f, _gammas[l], learn ? _epsilons[l] : 0.0f);
+            _layers[l].backward(feedBack, cs, reward, learn ? _betas[l] : 0.0f, learn ? _deltas[l] : 0.0f, _gammas[l], _traceCutoffs[l], learn ? _epsilons[l] : 0.0f);
         }
     }
 }
