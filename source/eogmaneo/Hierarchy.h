@@ -105,6 +105,9 @@ namespace eogmaneo {
         std::vector<float> _traceCutoffs;
         std::vector<float> _epsilons;
 
+        std::vector<float> _rewardSums;
+        std::vector<float> _rewardCounts;
+
         std::vector<int> _ticks;
         std::vector<int> _ticksPerUpdate;
 

@@ -31,6 +31,9 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
     _traceCutoffs.resize(layerDescs.size());
     _epsilons.resize(layerDescs.size());
 
+    _rewardSums.resize(layerDescs.size(), 0.0f);
+    _rewardCounts.resize(layerDescs.size(), 0.0f);
+
 	_inputTemporalHorizon = layerDescs.front()._temporalHorizon;
     _numInputs = inputSizes.size();
 
@@ -115,6 +118,9 @@ bool Hierarchy::load(const std::string &fileName) {
     _traceCutoffs.resize(numLayers);
     _epsilons.resize(numLayers);
 
+    _rewardSums.resize(numLayers);
+    _rewardCounts.resize(numLayers);
+
 	s >> _inputTemporalHorizon;
     s >> _numInputs;
 
@@ -138,7 +144,7 @@ bool Hierarchy::load(const std::string &fileName) {
 
         _ticksPerUpdate[l] = l == 0 ? 1 : ticksPerUpdate; // First layer always 1
 
-        s >> _alphas[l] >> _betas[l] >> _deltas[l] >> _gammas[l] >> _traceCutoffs[l] >> _epsilons[l];
+        s >> _alphas[l] >> _betas[l] >> _deltas[l] >> _gammas[l] >> _traceCutoffs[l] >> _epsilons[l] >> _rewardSums[l] >> _rewardCounts[l];
 
         _layers[l].createFromStream(s);
 
@@ -179,7 +185,7 @@ void Hierarchy::save(const std::string &fileName) {
 
         s << temporalHorizon << " " << _ticksPerUpdate[l] << std::endl;
 
-        s << _alphas[l] << " " << _betas[l] << " " << _deltas[l] << " " << _gammas[l] << " " << _traceCutoffs[l] << " " << _epsilons[l] << std::endl;
+        s << _alphas[l] << " " << _betas[l] << " " << _deltas[l] << " " << _gammas[l] << " " << _traceCutoffs[l] << " " << _epsilons[l] << " " << _rewardSums[l] << " " << _rewardCounts[l] << std::endl;
 
         _layers[l].writeToStream(s);
 
@@ -219,6 +225,9 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
     std::vector<bool> update(_layers.size(), false);
 
     for (int l = 0; l < _layers.size(); l++) {
+        _rewardSums[l] += reward;
+        _rewardCounts[l] += 1.0f;
+
         if (l == 0 || _ticks[l] >= _ticksPerUpdate[l]) {
             _ticks[l] = 0;
 
@@ -252,7 +261,12 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
             else
                 feedBack = { _layers[l]._hiddenStates };
 
-            _layers[l].backward(feedBack, cs, reward, learn ? _betas[l] : 0.0f, learn ? _deltas[l] : 0.0f, _gammas[l], _traceCutoffs[l], learn ? _epsilons[l] : 0.0f);
+            float r = _rewardSums[l] / std::max(1.0f, _rewardCounts[l]);
+
+            _layers[l].backward(feedBack, cs, r, learn ? _betas[l] : 0.0f, learn ? _deltas[l] : 0.0f, _gammas[l], _traceCutoffs[l], learn ? _epsilons[l] : 0.0f);
+
+            _rewardSums[l] = 0.0f;
+            _rewardCounts[l] = 0.0f;
         }
     }
 }
