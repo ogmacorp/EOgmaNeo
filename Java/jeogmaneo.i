@@ -23,6 +23,7 @@
 #include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
 #include "RandomEncoder.h"
+#include "ImageEncoder.h"
 #include "CornerEncoder.h"
 #endif
 #ifdef SFML_FOUND
@@ -54,6 +55,7 @@
 %include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
 %include "RandomEncoder.h"
+%include "ImageEncoder.h"
 %include "CornerEncoder.h"
 #endif
 

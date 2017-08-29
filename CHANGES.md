@@ -1,3 +1,8 @@
+1.1.2 August, 2017
+==================
+
+- Adding an Image Pre-Encoder
+
 1.1.1 July, 2017
 ================
 

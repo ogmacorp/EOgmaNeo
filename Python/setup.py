@@ -171,21 +171,24 @@ class build_ext_subclass(build_ext):
         return [self.get_ext_path(name) for name in self.get_names()]
 
 
+# The list of cpp files here is optional, the CMakeLists.txt
+# script overrides this list of cpp source files.
 extension_mod = Extension(
     name="_eogmaneo",
     sources=["pyeogmaneo.i",
-	"../source/eogmaneo/ThreadPool.cpp",
-	"../source/eogmaneo/System.cpp",
-	"../source/eogmaneo/Layer.cpp",
+	"../source/eogmaneo/ComputeSystem.cpp",
 	"../source/eogmaneo/Hierarchy.cpp",
-	"../source/eogmaneo/RandomEncoder.cpp",
-	"../source/eogmaneo/CornerEncoder.cpp",
-	"../source/eogmaneo/Preprocessing.cpp",]
+	"../source/eogmaneo/Layer.cpp",
+	"../source/eogmaneo/Preprocessing.cpp",
+	"../source/eogmaneo/ThreadPool.cpp",
+	"../source/optional/CornerEncoder.cpp",
+	"../source/optional/ImageEncoder.cpp",
+	"../source/optional/RandomEncoder.cpp",]
 )
 
 setup(
     name="eogmaneo",
-    version="1.1.1",
+    version="1.1.2",
     description="Python bindings for the EOgmaNeo library",
     long_description='https://github.com/ogmacorp/EOgmaNeo',
     author='Ogma Intelligent Systems Corp',
