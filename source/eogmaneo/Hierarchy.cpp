@@ -8,6 +8,7 @@
 
 #include "Hierarchy.h"
 
+#include <algorithm>
 #include <fstream>
 #include <assert.h>
 
