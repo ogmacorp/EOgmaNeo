@@ -36,6 +36,7 @@ namespace eogmaneo {
 		
 		friend class Layer;
 		friend class Hierarchy;
+        friend class ImageEncoder;
 		friend class RandomEncoder;
         friend class GaborEncoder;
 		friend class CornerEncoder;

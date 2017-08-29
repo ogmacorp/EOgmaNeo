@@ -79,6 +79,8 @@ Here is an image to help describe the input format: [Chunked SDR](./chunkedSDR.p
 All data must be presented in this form. To help with conversion, we included a few "pre-encoders" - encoders that serve to transform various kinds of data into chunked SDR form.
 
 Currently available pre-encoders:
+
+- ImageEncoder
 - RandomEncoder
 - CornerEncoder
 - LineSegmentEncoder
@@ -146,10 +148,11 @@ EOgmaNeo requires: a C++1x compiler, and [CMake](https://cmake.org/).
 Optional requirements include [OpenCV](http://opencv.org/) (for additional pre-encoders) and [SFML](https://www.sfml-dev.org/) (for connecting to [NeoVis](https://github.com/ogmacorp/NeoVis) visualization tool).
 
 The library has been tested extensively on:
- - Windows using Microsoft Visual Studio 2013 and 2015,
- - Linux using GCC 4.8 and upwards,
- - Mac OSX using Clang, and
- - Raspberry Pi 3, using Raspbian Jessie with GCC 4.8
+
+- Windows using Microsoft Visual Studio 2013 and 2015,
+- Linux using GCC 4.8 and upwards,
+- Mac OSX using Clang, and
+- Raspberry Pi 3, using Raspbian Jessie with GCC 4.8
 
 ### CMake
 
@@ -159,13 +162,15 @@ Version 3.1, and upwards, of [CMake](https://cmake.org/) is the required version
 
 The following commands can be used to build the EOgmaNeo library:
 
-> mkdir build; cd build  
-> cmake -DBUILD_SHARED_LIBS=ON ..  
-> make  
+```bash
+mkdir build; cd build
+cmake -DBUILD_SHARED_LIBS=ON -DBUILD_PREENCODERS=ON ..
+make
+```
 
 The `cmake` command can be passed the following optional settings:
 
-- `CMAKE_INSTALL_PREFIX` to determine where to install the library and header files.
+- `CMAKE_INSTALL_PREFIX` to determine where to install the library and header files. Default is a system-wide install location.
 - `BUILD_SHARED_LIBS` boolean CMake option can be used to create dynamic/shared object library (default is to create a _static_ library).
 - `BUILD_PREENCODERS` to include the Random and Corner pre-encoders into the library.
 
