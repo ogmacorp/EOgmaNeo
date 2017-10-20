@@ -178,17 +178,15 @@ extension_mod = Extension(
     sources=["pyeogmaneo.i",
 	"../source/eogmaneo/ComputeSystem.cpp",
 	"../source/eogmaneo/Hierarchy.cpp",
-	"../source/eogmaneo/Layer.cpp",
+	"../source/eogmaneo/Agent.cpp",
 	"../source/eogmaneo/Preprocessing.cpp",
-	"../source/eogmaneo/ThreadPool.cpp",
-	"../source/optional/CornerEncoder.cpp",
-	"../source/optional/ImageEncoder.cpp",
-	"../source/optional/RandomEncoder.cpp",]
+	"../source/optional/KMeansEncoder.cpp",
+	"../source/optional/ImageEncoder.cpp",]
 )
 
 setup(
     name="eogmaneo",
-    version="1.1.2",
+    version="1.2",
     description="Python bindings for the EOgmaNeo library",
     long_description='https://github.com/ogmacorp/EOgmaNeo',
     author='Ogma Intelligent Systems Corp',

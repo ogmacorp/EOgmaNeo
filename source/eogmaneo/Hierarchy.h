@@ -30,13 +30,10 @@ namespace eogmaneo {
         */
 		int _chunkSize;
 
-        //!@{
         /*!
-        \brief Radii of forward and backward sparse weight matrices.
+        \brief Radius of forward and backward sparse weight matrices.
         */
-		int _forwardRadius;
-		int _backwardRadius;
-        //!@}
+		int _radius;
 
         /*!
         \brief Number of ticks a layer takes to update (relative to previous layer).
@@ -59,33 +56,18 @@ namespace eogmaneo {
         float _beta;
 
         /*!
-        \brief Q learning rate (decoder).
-        */
-        float _delta;
-
-        /*!
-        \brief Q discount factor (decoder).
+        \brief Solidification decay.
         */
         float _gamma;
 
-        /*!
-        \brief Q trace cutoff value (minimum trace strength).
-        */
-        float _traceCutoff;
-
-        /*!
-        \brief Q exploration rate (decoder).
-        */
-        float _epsilon;
-        
         /*!
         \brief Initialize defaults.
         */
 		LayerDesc()
 			: _width(36), _height(36), _chunkSize(6),
-			_forwardRadius(9), _backwardRadius(9),
+			_radius(9),
 			_ticksPerUpdate(2), _temporalHorizon(2),
-			_alpha(0.01f), _beta(0.05f), _delta(0.0f), _gamma(0.99f), _traceCutoff(0.01f), _epsilon(0.01f)
+			_alpha(0.5f), _beta(0.1f), _gamma(0.0f)
 		{}
 	};
 
@@ -98,15 +80,9 @@ namespace eogmaneo {
 
         std::vector<std::vector<std::vector<int> > > _histories;
 
-		std::vector<float> _alphas;
+        std::vector<float> _alphas;
         std::vector<float> _betas;
-        std::vector<float> _deltas;
         std::vector<float> _gammas;
-        std::vector<float> _traceCutoffs;
-        std::vector<float> _epsilons;
-
-        std::vector<float> _rewardSums;
-        std::vector<float> _rewardCounts;
 
         std::vector<int> _ticks;
         std::vector<int> _ticksPerUpdate;
@@ -119,7 +95,7 @@ namespace eogmaneo {
         \brief Create the hierarchy.
         \param inputSizes vector of input dimension tuples.
         \param inputChunkSizes vector of input chunk sizes (diameters).
-        \param predictInputs vector of booleans for which inputs should be predicted.
+        \param predictInputs flags for which inputs to generate predictions for.
         \param layerDescs vector of LayerDesc structures, describing each layer in sequence.
         \param seed random number generator seed for generating the hierarchy.
         */
@@ -144,7 +120,7 @@ namespace eogmaneo {
         \param learn whether learning should be enabled, defaults to true.
         \param reward reinforcement signal, defaults to 0.
         */
-        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true, float reward = 0.0f);
+        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true);
 
         /*!
         \brief Get the number of (hidden) layers.
@@ -162,7 +138,7 @@ namespace eogmaneo {
 
             return _layers.front()._predictions[index];
         }
-
+        
         //!@{
         /*!
         \brief Accessors for layer parameters.
@@ -174,18 +150,6 @@ namespace eogmaneo {
         float getBeta(int l) const {
             return _betas[l];
         }
-        
-        float getDelta(int l) const {
-            return _deltas[l];
-        }
-        
-        float getGamma(int l) const {
-            return _gammas[l];
-        }
-
-        float getEpsilon(int l) const {
-            return _epsilons[l];
-        }
         //!@}
 
         /*!
@@ -193,6 +157,13 @@ namespace eogmaneo {
         */
         int getTicks(int l) const {
             return _ticks[l];
+        }
+
+        /*!
+        \brief Get layer ticks per update, relative to previous layer.
+        */
+        int getTicksPerUpdate(int l) const {
+            return _ticksPerUpdate[l];
         }
 
         /*!

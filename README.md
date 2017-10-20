@@ -72,7 +72,7 @@ And retrieve predictions with:
 ```
 
 Important note: Inputs are presented in a _chunked SDR_ format. This format consists of a list of active units, each corresponding to a chunk (or _tile_) of input.
-This vector is in raveled form (of size width x height).
+This vector is in raveled form (1-D array of size width x height).
 
 Here is an image to help describe the input format: [Chunked SDR](./chunkedSDR.png)
 
@@ -81,9 +81,9 @@ All data must be presented in this form. To help with conversion, we included a 
 Currently available pre-encoders:
 
 - ImageEncoder
-- RandomEncoder
-- CornerEncoder
-- LineSegmentEncoder
+- KMeansEncoder
+- LineSegmentEncoder (OpenCV)
+- FastFeatureDetector (OpenCV)
 
 You may need to develop your own pre-encoders depending on the task. Sometimes, data can be binned into chunks without any real pre-encoding, such as bounded scalars.
 
@@ -122,7 +122,7 @@ Sending the current EOgmaNeo hierarchy state through the adapter to the NeoVis a
 
 #### OpenCV Interop
 
-An [OpenCV](http://opencv.org/) interop class is built into the library if the CMake build process finds OpenCV on your system. 
+An [OpenCV](http://opencv.org/) interop class is built into the library if the CMake build process finds OpenCV on your system.
 
 **Note:** For the CMake build process to find OpenCV make sure that a `OpenCV_DIR` environment variable is set to the location of OpenCV, specifically the directory that contains the `OpenCVConfig.cmake` file. If this configuration file is not found the OpenCV interop code is not included in the library.
 
@@ -139,7 +139,7 @@ Be aware that all these functions contain certain remapping of input arrays into
 
 **Note:** The `LineSegmentDetector` contains extra functionality that takes detected lines and forms them into a sparse chunked representation as it's output. Therefore, the LineSegmentDetector acts as a pre-encoder for an EOgmaNeo hierarchy.
 
-**Note:** Similar to the `LineSegmentDetector`, the `FastFeatureDetector` contains extra functionality that takes detected corner keypoints and forms them into a sparse chunked representation as its output. Therefore, it acts as a pre-encoder for an EOgmaNeo hierarchy.
+**Note:** Similar to the `LineSegmentDetector`, the `FastFeatureDetector` contains extra functionality that takes detected corner key points and forms them into a sparse chunked representation as its output. Therefore, it acts as a pre-encoder for an EOgmaNeo hierarchy.
 
 ## Requirements
 
@@ -164,14 +164,13 @@ The following commands can be used to build the EOgmaNeo library:
 
 ```bash
 mkdir build; cd build
-cmake -DBUILD_SHARED_LIBS=ON -DBUILD_PREENCODERS=ON ..
+cmake -DBUILD_PREENCODERS=ON ..
 make
 ```
 
 The `cmake` command can be passed the following optional settings:
 
 - `CMAKE_INSTALL_PREFIX` to determine where to install the library and header files. Default is a system-wide install location.
-- `BUILD_SHARED_LIBS` boolean CMake option can be used to create dynamic/shared object library (default is to create a _static_ library).
 - `BUILD_PREENCODERS` to include the Random and Corner pre-encoders into the library.
 
 `make install` can be run to install the library. `make uninstall` can be used to uninstall the library.
