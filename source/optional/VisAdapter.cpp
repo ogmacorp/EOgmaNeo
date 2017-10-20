@@ -106,7 +106,7 @@ void VisAdapter::update(float waitSeconds) {
 
                 ws._name = "ff_" + std::to_string(v);
 
-                ws._radius = _pHierarchy->getLayer(_caret._layer).getVisibleLayerDesc(v)._forwardRadius;
+                ws._radius = _pHierarchy->getLayer(_caret._layer).getVisibleLayerDesc(v)._radius;
 
                 ws._weights = _pHierarchy->getLayer(_caret._layer).getFeedForwardWeights(v, caretX, caretY);
 
@@ -120,7 +120,7 @@ void VisAdapter::update(float waitSeconds) {
 
                     ws._name = "p_h_" + std::to_string(v);
 
-                    ws._weights = _pHierarchy->getLayer(_caret._layer).getFeedBackWeights(v, 0, caretX, caretY);
+                    ws._weights = _pHierarchy->getLayer(_caret._layer).getPredictionWeights(0, v, caretX, caretY);
 
                     ws._radius = (std::sqrt(ws._weights.size()) - 1) / 2;
 
@@ -133,7 +133,7 @@ void VisAdapter::update(float waitSeconds) {
 
                     ws._name = "p_fb_" + std::to_string(v);
 
-                    ws._weights = _pHierarchy->getLayer(_caret._layer).getFeedBackWeights(v, 1, caretX, caretY);
+                    ws._weights = _pHierarchy->getLayer(_caret._layer).getPredictionWeights(1, v, caretX, caretY);
 
                     ws._radius = (std::sqrt(ws._weights.size()) - 1) / 2;
 

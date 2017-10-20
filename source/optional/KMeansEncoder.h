@@ -13,19 +13,18 @@
 #include <random>
 
 namespace eogmaneo {
-	class RandomEncoder;
+	class KMeansEncoder;
 	
     /*!
-    \brief Random encoder work item. Internal use only.
+    \brief K-means encoder work item. Internal use only.
     */
-	class RandomEncoderWorkItem : public WorkItem {
+	class KMeansEncoderWorkItem : public WorkItem {
 	public:
-		RandomEncoder* _pEncoder;
+		KMeansEncoder* _pEncoder;
 
 		int _cx, _cy;
-		bool _useDistanceMetric;
 
-		RandomEncoderWorkItem()
+		KMeansEncoderWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -33,15 +32,15 @@ namespace eogmaneo {
 	};
 	
     /*!
-    \brief Random decoder work item. Internal use only.
+    \brief K-means decoder work item. Internal use only.
     */
-	class RandomDecoderWorkItem : public WorkItem {
+	class KMeansDecoderWorkItem : public WorkItem {
 	public:
-		RandomEncoder* _pEncoder;
+		KMeansEncoder* _pEncoder;
 
 		int _cx, _cy;
 
-		RandomDecoderWorkItem()
+		KMeansDecoderWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -49,17 +48,18 @@ namespace eogmaneo {
 	};
 
     /*!
-    \brief Random learn work item. Internal use only.
+    \brief K-means learn work item. Internal use only.
     */
-    class RandomLearnWorkItem : public WorkItem {
+    class KMeansLearnWorkItem : public WorkItem {
     public:
-        RandomEncoder* _pEncoder;
+        KMeansEncoder* _pEncoder;
 
         int _cx, _cy;
         float _alpha;
         float _gamma;
+        float _minDistance;
 
-        RandomLearnWorkItem()
+        KMeansLearnWorkItem()
             : _pEncoder(nullptr)
         {}
 
@@ -67,9 +67,9 @@ namespace eogmaneo {
     };
 	
     /*!
-    \brief Encoders values to a chunked SDR through random transformation.
+    \brief Encoders values to a chunked SDR through linear transformation followed by winner-takes-all.
     */
-    class RandomEncoder {
+    class KMeansEncoder {
     private:
         int _inputWidth, _inputHeight;
         int _hiddenWidth, _hiddenHeight;
@@ -77,15 +77,16 @@ namespace eogmaneo {
         int _radius;
 
         std::vector<int> _hiddenStates;
+        std::vector<int> _hiddenStatesPrev;
 
         std::vector<float> _hiddenActivations;
         std::vector<float> _hiddenBiases;
 
         std::vector<float> _weights;
 		
-		void activate(int cx, int cy, bool useDistanceMetric);
+		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);
-        void learn(int cx, int cy, float alpha, float gamma);
+        void learn(int cx, int cy, float alpha, float gamma, float maxDistance);
 
 		std::vector<int> _reconHiddenStates;
 		std::vector<float> _input;
@@ -94,7 +95,7 @@ namespace eogmaneo {
 		
     public:
         /*!
-        \brief Create the random encoder.
+        \brief Create the K-means encoder.
         \param inputWidth input image width.
         \param inputHeight input image height.
         \param hiddenWidth hidden SDR width.
@@ -107,7 +108,7 @@ namespace eogmaneo {
         \param normalize whether to normalize (L2) the weights.
         */
         void create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int chunkSize, int radius,
-            float initMinWeight, float initMaxWeight, unsigned long seed, bool normalize);
+            float initMinWeight, float initMaxWeight, unsigned long seed);
 
         /*!
         \brief Zero the hidden states.
@@ -123,9 +124,8 @@ namespace eogmaneo {
         \brief Activate the encoder from an input (compute hidden states, perform encoding).
         \param input input vector/image.
         \param cs compute system to be used.
-        \param useDistanceMetric whether to activate based on euclidean distance (true) or dot product (false). Defaults to true.
         */
-        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs, bool useDistanceMetric = true);
+        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs);
 
         /*!
         \brief Reconstruct (reverse) an encoding.
@@ -136,13 +136,22 @@ namespace eogmaneo {
         const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs);
 
         /*!
-        \brief Experimental learning functionality.
-        Requires that reconstruct(...) has been called, without another call to activate(...).
+        \brief Learning functionality.
         \param alpha weight learning rate.
         \param gamma bias learning rate.
         \param cs compute system to be used.
         */
-        void learn(float alpha, float gamma, ComputeSystem &cs);
+        void learn(float alpha, float gamma, float maxDistance, ComputeSystem &cs);
+
+        /*!
+        \brief Save to file.
+        */
+        void save(const std::string &fileName);
+
+        /*1
+        \brief Load from file.
+        */
+        bool load(const std::string &fileName);
 
         //!@{
         /*!
@@ -191,8 +200,8 @@ namespace eogmaneo {
             return _hiddenStates;
         }
 		
-		friend class RandomEncoderWorkItem;
-		friend class RandomDecoderWorkItem;
-        friend class RandomLearnWorkItem;
+		friend class KMeansEncoderWorkItem;
+		friend class KMeansDecoderWorkItem;
+        friend class KMeansLearnWorkItem;
     };
 }

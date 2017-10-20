@@ -13,10 +13,9 @@ project(EOgmaNeo)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 set(EOGMANEO_MAJOR_VERSION 1)
-set(EOGMANEO_MINOR_VERSION 1)
-set(EOGMANEO_PATCH_VERSION 2)
-set(EOGMANEO_VERSION
-  ${EOGMANEO_MAJOR_VERSION}.${EOGMANEO_MINOR_VERSION}.${EOGMANEO_PATCH_VERSION})
+set(EOGMANEO_MINOR_VERSION 2)
+set(EOGMANEO_PATCH_VERSION 0)
+set(EOGMANEO_VERSION ${EOGMANEO_MAJOR_VERSION}.${EOGMANEO_MINOR_VERSION}.${EOGMANEO_PATCH_VERSION})
  
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
@@ -28,13 +27,13 @@ endif()
 message(STATUS "Bitness: ${BITNESS}")
 
 if(NOT CMAKE_BUILD_TYPE)
-    message("CMAKE_BUILD_TYPE not set, setting it to Release")
-    set(CMAKE_BUILD_TYPE Release)
+  message("CMAKE_BUILD_TYPE not set, setting it to Release")
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-option(BUILD_SHARED_LIBS OFF)
-message(STATUS "Shared libs: ${BUILD_SHARED_LIBS}")
+option(BUILD_TESTS OFF)
+message(STATUS "Build tests: ${BUILD_TESTS}")
 
 option(BUILD_PREENCODERS OFF)
 message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
@@ -57,8 +56,8 @@ endif()
 find_package(OpenCV HINTS /usr/local/opt/opencv3)
 
 if(OpenCV_FOUND)
-    #message(STATUS "Found existing OpenCV in ${OpenCV_INCLUDE_DIRS}")
-    include_directories(${OpenCV_INCLUDE_DIRS})
+  #message(STATUS "Found existing OpenCV in ${OpenCV_INCLUDE_DIRS}")
+  include_directories(${OpenCV_INCLUDE_DIRS})
 endif()
 
 
@@ -75,14 +74,11 @@ file(GLOB_RECURSE EOGMANEO_SRC
 )
 
 if (BUILD_PREENCODERS)
-  file(GLOB_RECURSE EOGMANEO_CORNERENCODER_SRC "source/optional/CornerEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_CORNERENCODER_SRC})
-
-  file(GLOB_RECURSE EOGMANEO_RANDOMENCODER_SRC "source/optional/RandomEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_RANDOMENCODER_SRC})
-
   file(GLOB_RECURSE EOGMANEO_IMAGEENCODER_SRC "source/optional/ImageEncoder.*")
   list(APPEND EOGMANEO_SRC ${EOGMANEO_IMAGEENCODER_SRC})
+
+  file(GLOB_RECURSE EOGMANEO_KMEANSENCODER_SRC "source/optional/KMeansEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_KMEANSENCODER_SRC})
 endif()
 
 if(SFML_FOUND)
@@ -100,40 +96,30 @@ if(SFML_FOUND)
   target_link_libraries(EOgmaNeo ${SFML_LIBRARIES})
 endif()
 if(OpenCV_FOUND)
-    target_link_libraries(EOgmaNeo ${OpenCV_LIBS})
-endif()
-
-if(BUILD_SHARED_LIBS)
-    add_definitions(-DOGMA_DLL)
-
-#    Use CMake to generate SharedLib.h instead?
-#    include (GenerateExportHeader)
-#    generate_export_header(OgmaNeo
-#                           BASE_NAME OgmaNeo
-#                           EXPORT_MACRO_NAME OgmaNeo_EXPORT
-#                           EXPORT_FILE_NAME OgmaNeo_Export.h
-#                           STATIC_DEFINE OgmaNeo_BUILT_AS_STATIC
-#    )
+  target_link_libraries(EOgmaNeo ${OpenCV_LIBS})
 endif()
 
 if(MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 set_property(TARGET EOgmaNeo PROPERTY CXX_STANDARD 14)
 set_property(TARGET EOgmaNeo PROPERTY CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    if(BITNESS EQUAL 64)
-        set_target_properties(EOgmaNeo PROPERTIES COMPILE_FLAGS "-m64" LINK_FLAGS "-m64")
-    endif()
+  if(BITNESS EQUAL 64)
+    set_target_properties(EOgmaNeo PROPERTIES COMPILE_FLAGS "-m64" LINK_FLAGS "-m64")
+  endif()
 endif()
 
+if(BUILD_TESTS)
+  add_executable(TestSaveLoad source/testing/TestSaveLoad.cpp)
+  target_link_libraries(TestSaveLoad PUBLIC EOgmaNeo)
+endif()
 
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
-set(INSTALL_INCLUDE_DIR include/oegmaneo CACHE PATH
-  "Installation directory for header files")
+set(INSTALL_INCLUDE_DIR include/oegmaneo CACHE PATH "Installation directory for header files")
 
 message(STATUS "CMake install prefix = ${CMAKE_INSTALL_PREFIX}")
 
@@ -199,7 +185,8 @@ install(DIRECTORY "${3RDPARTY_PATH}/include/"
         DESTINATION include/eogmaneo
         FILES_MATCHING PATTERN "*.h*")
  
-install(EXPORT EOgmaNeoTargets DESTINATION "${INSTALL_CMAKE_DIR}")
+install(EXPORT EOgmaNeoTargets
+        DESTINATION "${INSTALL_CMAKE_DIR}")
 
 # Uninstall target
 configure_file(
