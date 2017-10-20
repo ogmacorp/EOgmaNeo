@@ -20,11 +20,11 @@
 #include "ComputeSystem.h"
 #include "Layer.h"
 #include "Hierarchy.h"
+#include "Agent.h"
 #include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
-#include "RandomEncoder.h"
+#include "KMeansEncoder.h"
 #include "ImageEncoder.h"
-#include "CornerEncoder.h"
 #endif
 #ifdef SFML_FOUND
 #include "VisAdapter.h"
@@ -50,23 +50,28 @@
 %template(StdPairi) std::pair<int, int>;
 %template(StdVecPairi) std::vector<std::pair<int, int> >;
 %template(StdVecLayerDesc) std::vector<eogmaneo::LayerDesc>;
+%template(StdVecQLayerDesc) std::vector<eogmaneo::QLayerDesc>;
 %template(StdVecf) std::vector<float>;
 %template(Std2DVecf) std::vector<std::vector<float> >;
 %template(StdVecb) std::vector<bool>;
 
 %ignore eogmaneo::ForwardWorkItem;
 %ignore eogmaneo::BackwardWorkItem;
+%ignore eogmaneo::PredictionWorkItem;
+
+%ignore eogmaneo::QForwardWorkItem;
+%ignore eogmaneo::QBackwardWorkItem;
+%ignore eogmaneo::QLearnWorkItem;
 
 %include "ComputeSystem.h"
 %include "Layer.h"
 %include "Hierarchy.h"
+%include "Agent.h"
 %include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
-%include "RandomEncoder.h"
+%include "KMeansEncoder.h"
 %include "ImageEncoder.h"
-%include "CornerEncoder.h"
 #endif
-
 #ifdef SFML_FOUND
 %ignore eogmaneo::SDR;
 %ignore eogmaneo::WeightSet;
@@ -74,7 +79,6 @@
 %ignore eogmaneo::Caret;
 %include "VisAdapter.h"
 #endif
-
 #ifdef OPENCV_FOUND
 %include "OpenCVInterop.h"
 #endif

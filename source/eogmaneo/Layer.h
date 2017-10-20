@@ -40,9 +40,27 @@ namespace eogmaneo {
     };
 
     /*!
-    \brief Backward work item, for internal use only.
+    \brief Forward work item, for internal use only.
     */
     class BackwardWorkItem : public WorkItem {
+    public:
+        class Layer* _pLayer;
+
+        int _hiddenChunkIndex;
+
+        std::mt19937 _rng;
+
+        BackwardWorkItem()
+            : _pLayer(nullptr)
+        {}
+
+        void run(size_t threadIndex) override;
+    };
+
+    /*!
+    \brief Prediction work item, for internal use only.
+    */
+    class PredictionWorkItem : public WorkItem {
     public:
         class Layer* _pLayer;
 
@@ -51,7 +69,7 @@ namespace eogmaneo {
         
         std::mt19937 _rng;
 
-        BackwardWorkItem()
+        PredictionWorkItem()
             : _pLayer(nullptr)
         {}
 
@@ -76,16 +94,13 @@ namespace eogmaneo {
         */
 		int _chunkSize;
 
-        //!@{
         /*!
-        \brief Radii of forward and backward sparse weight matrices.
+        \brief Radius of sparse weight matrices.
         */
-		int _forwardRadius;
-		int _backwardRadius;
-        //!@}
-        
+		int _radius;
+
         /*!
-        \brief Whether this layer is predicted (has a backward pass). Only ever false for input layers and overflowing (temporalHorizon > ticksPerUpdate) visible layers.
+        \brief Whether or not this visible layer should be predicted (used to save processing power).
         */
         bool _predict;
 
@@ -94,8 +109,8 @@ namespace eogmaneo {
         */
 		VisibleLayerDesc()
 			: _width(36), _height(36), _chunkSize(6),
-			_forwardRadius(9), _backwardRadius(9),
-			_predict(true)
+			_radius(9),
+            _predict(true)
 		{}
 	};
 
@@ -109,70 +124,64 @@ namespace eogmaneo {
         int _chunkSize;
 
         std::vector<int> _hiddenStates;
-        std::vector<int> _hiddenStatesPrev;
 
-        std::vector<std::vector<float> > _feedForwardWeights;
+        std::vector<std::vector<float>> _feedForwardWeights;
+        std::vector<std::vector<std::vector<float>>> _predictionWeights;
+
+        std::vector<std::vector<float>> _reconActivations;
+        std::vector<std::vector<float>> _reconCounts;
+        std::vector<std::vector<float>> _reconActivationsPrev;
+        std::vector<std::vector<float>> _reconCountsPrev;
 
         std::vector<VisibleLayerDesc> _visibleLayerDescs;
 
-        std::vector<std::vector<float>> _predictionActivations;
-        std::vector<std::vector<float>> _predictionActivationsPrev;
-
         std::vector<std::vector<int>> _predictions;
-        std::vector<std::vector<int>> _predictionsPrev;
 
-        std::vector<std::vector<std::vector<float> > > _feedBackWeights;
-        std::vector<std::vector<std::unordered_map<int, float> > > _feedBackTraces;
-
+        std::vector<std::vector<float>> _predictionActivations;
+        std::vector<std::vector<float>> _predictionCounts;
+        std::vector<std::vector<float>> _predictionActivationsPrev;
+        
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;
 
         std::vector<std::vector<int>> _feedBack;
         std::vector<std::vector<int>> _feedBackPrev;
-
+        
         float _alpha;
         float _beta;
-        float _delta;
         float _gamma;
-        float _traceCutoff;
-        float _epsilon;
-        float _reward;
-
+  
         void createFromStream(std::istream &s);
         void writeToStream(std::ostream &s);
 
-    public:  
+    public:
         /*!
         \brief Create a layer.
         \param hiddenWidth width of the layer.
         \param hiddenHeight height of the layer.
         \param chunkSize chunk size of the layer.
-        \param hasFeedBack whether or not this layer receives feedback from a higher layer.
+        \param numFeedBack amount of feedback from a higher layer.
         \param visibleLayerDescs descriptor structures for all visible layers this (hidden) layer has.
         \param seed random number generator seed for layer generation.
         */
-        void create(int hiddenWidth, int hiddenHeight, int chunkSize, bool hasFeedBack, const std::vector<VisibleLayerDesc> &visibleLayerDescs, unsigned long seed);
+        void create(int hiddenWidth, int hiddenHeight, int chunkSize, int numFeedBack, const std::vector<VisibleLayerDesc> &visibleLayerDescs, unsigned long seed);
 
         /*!
-        \brief Forward activation.
+        \brief Forward activation and learning.
         \param inputs vector of input SDRs in chunked format.
         \param cs compute system to be used.
         \param alpha feed forward learning rate.
+        \param gamma learning decay.
         */
-        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, float alpha);
+        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, float alpha, float gamma);
 
         /*!
         \brief Backward activation.
         \param feedBack vector of feedback SDRs in chunked format.
         \param cs compute system to be used.
-        \param reward reinforcement signal.
         \param beta feedback learning rate.
-        \param delta Q learning rate (0.0f disables reinforcement learning).
-        \param gamma Q discount factor.
-        \param traceCutoff minimum eligibility trace strength before the trace is removed.
-        \param epsilon Q exploration rate.
         */
-        void backward(const std::vector<std::vector<int> > &feedBack, ComputeSystem &cs, float reward, float beta, float delta, float gamma, float traceCutoff, float epsilon);
+        void backward(const std::vector<std::vector<int> > &feedBack, ComputeSystem &cs, float beta);
 
         //!@{
         /*!
@@ -223,13 +232,6 @@ namespace eogmaneo {
         }
 
         /*!
-        \brief Get previous timestep hidden states, in chunked format.
-        */
-        const std::vector<int> getHiddenStatesPrev() const {
-            return _hiddenStatesPrev;
-        }
-
-        /*!
         \brief Get inputs of a visible layer, in chunked format.
         */
         const std::vector<int> getInputs(int v) const {
@@ -237,24 +239,10 @@ namespace eogmaneo {
         }
 
         /*!
-        \brief Get previous timestep inputs of a visible layer, in chunked format.
-        */
-        const std::vector<int> getInputsPrev(int v) const {
-            return _inputsPrev[v];
-        }
-
-        /*!
         \brief Get predictions of a visible layer, in chunked format.
         */
         const std::vector<int> getPredictions(int v) const {
             return _predictions[v];
-        }
-
-        /*!
-        \brief Get previous timestep predictions of a visible layer, in chunked format.
-        */
-        const std::vector<int> getPredictionsPrev(int v) const {
-            return _predictionsPrev[v];
         }
 
         /*!
@@ -281,13 +269,17 @@ namespace eogmaneo {
         }
 
         /*!
-        \brief Get feedback weights of a particular unit.
-        This function is expensive, it reprojects weights such that they are addressed from the current layer instead of the visible layer.
+        \brief Get prediction weights of a particular unit.
         */
-        std::vector<float> getFeedBackWeights(int v, int f, int x, int y) const;
+        const std::vector<float> &getPredictionWeights(int f, int v, int x, int y) const {
+            int i = v + _visibleLayerDescs.size() * (x + y * _hiddenWidth);
+
+            return _predictionWeights[f][i]; 
+        }
 
         friend class ForwardWorkItem;
         friend class BackwardWorkItem;
+        friend class PredictionWorkItem;
         friend class Hierarchy;
     };
 }

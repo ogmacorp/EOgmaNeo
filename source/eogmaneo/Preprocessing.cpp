@@ -100,7 +100,7 @@ void eogmaneo::whiten(const std::vector<float> &src, std::vector<float> &dest, i
                         int oy = y + dy;
 
                         if (ox >= 0 && oy >= 0 && ox < width && oy < height) {
-                            float centeredOther = src[ox + oy * width] - center;
+                            float centeredOther = src[ox + oy * width] * 2.0f - 1.0f;
 
                             covariance += centeredCurrent * centeredOther;
                         }

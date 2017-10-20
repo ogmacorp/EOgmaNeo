@@ -81,6 +81,7 @@ namespace eogmaneo {
 
         std::vector<float> _weights0;
 		std::vector<float> _weights1;
+		std::vector<float> _weights2;
 		
 		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);

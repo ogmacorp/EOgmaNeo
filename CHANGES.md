@@ -1,3 +1,11 @@
+1.2 October, 2017
+===================
+
+- Hierarchy predicting using a 'double reconstruction' algorithm
+- Removal of Corner and Random Pre-Encoders
+- Adding the KMeans Pre-Encoder
+- Addition of a reinforcement learning Agent interface
+
 1.1.2 August, 2017
 ==================
 
@@ -9,14 +17,14 @@
 - Reward averaging
 - Save/load bug fix
 
-1.1  July, 2017
+1.1 July, 2017
 ===============
 
 - Hierarchy and Layer updates
 - Tweaks to reinforcement learning code
 - Made pre-encoders (Random and Corner) optional
 - New OpenCV based FAST feature detector pre-encoder
-- Bug fixes with language bindings using VisAdpater and OpenCVInterop
+- Bug fixes with language bindings using VisAdapter and OpenCVInterop
 
 1.0.1 July, 2017
 ================

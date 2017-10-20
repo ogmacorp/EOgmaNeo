@@ -10,11 +10,12 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 #include <assert.h>
 
 using namespace eogmaneo;
 
-void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const std::vector<int> &inputChunkSizes, const std::vector<bool> &predictInputs, const std::vector<LayerDesc> &layerDescs, unsigned long seed) {
+void Hierarchy::create(const std::vector<std::pair<int, int> > &inputSizes, const std::vector<int> &inputChunkSizes, const std::vector<bool> &predictInputs, const std::vector<LayerDesc> &layerDescs, unsigned long seed) {
     std::mt19937 rng(seed);
 
     _layers.resize(layerDescs.size());
@@ -22,33 +23,25 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
     _ticks.assign(layerDescs.size(), 0);
 
     _histories.resize(layerDescs.size());
-
+    
     _ticksPerUpdate.resize(layerDescs.size());
 
-	_alphas.resize(layerDescs.size());
+    _alphas.resize(layerDescs.size());
     _betas.resize(layerDescs.size());
-    _deltas.resize(layerDescs.size());
     _gammas.resize(layerDescs.size());
-    _traceCutoffs.resize(layerDescs.size());
-    _epsilons.resize(layerDescs.size());
-
-    _rewardSums.resize(layerDescs.size(), 0.0f);
-    _rewardCounts.resize(layerDescs.size(), 0.0f);
 
 	_inputTemporalHorizon = layerDescs.front()._temporalHorizon;
     _numInputs = inputSizes.size();
 
+    for (int l = 0; l < layerDescs.size(); l++)
+        _ticksPerUpdate[l] = l == 0 ? 1 : layerDescs[l]._ticksPerUpdate; // First layer always 1
+
     for (int l = 0; l < layerDescs.size(); l++) {
         _histories[l].resize(l == 0 ? inputSizes.size() * layerDescs[l]._temporalHorizon : layerDescs[l]._temporalHorizon);
 
-        _ticksPerUpdate[l] = l == 0 ? 1 : layerDescs[l]._ticksPerUpdate; // First layer always 1
-
 		_alphas[l] = layerDescs[l]._alpha;
         _betas[l] = layerDescs[l]._beta;
-        _deltas[l] = layerDescs[l]._delta;
         _gammas[l] = layerDescs[l]._gamma;
-        _traceCutoffs[l] = layerDescs[l]._traceCutoff;
-        _epsilons[l] = layerDescs[l]._epsilon;
 
         std::vector<VisibleLayerDesc> visibleLayerDescs;
 
@@ -62,9 +55,8 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
                     visibleLayerDescs[index]._width = std::get<0>(inputSizes[i]);
                     visibleLayerDescs[index]._height = std::get<1>(inputSizes[i]);
                     visibleLayerDescs[index]._chunkSize = inputChunkSizes[i];
-                    visibleLayerDescs[index]._forwardRadius = layerDescs[l]._forwardRadius;
-                    visibleLayerDescs[index]._backwardRadius = layerDescs[l]._backwardRadius;
-                    visibleLayerDescs[index]._predict = predictInputs[i] && t == 0;
+                    visibleLayerDescs[index]._radius = layerDescs[l]._radius;
+                    visibleLayerDescs[index]._predict = t == 0 && predictInputs[i];
                 }
             }
 			
@@ -82,8 +74,7 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
                 visibleLayerDescs[t]._width = layerDescs[l - 1]._width;
                 visibleLayerDescs[t]._height = layerDescs[l - 1]._height;
                 visibleLayerDescs[t]._chunkSize = layerDescs[l - 1]._chunkSize;
-                visibleLayerDescs[t]._forwardRadius = layerDescs[l]._forwardRadius;
-                visibleLayerDescs[t]._backwardRadius = layerDescs[l]._backwardRadius;
+                visibleLayerDescs[t]._radius = layerDescs[l]._radius;
                 visibleLayerDescs[t]._predict = t < _ticksPerUpdate[l];
             }
 			
@@ -91,7 +82,7 @@ void Hierarchy::create(const std::vector<std::pair<int, int>> &inputSizes, const
 				_histories[l][v].resize((layerDescs[l - 1]._width / layerDescs[l - 1]._chunkSize) * (layerDescs[l - 1]._height / layerDescs[l - 1]._chunkSize), 0);
         }
 		
-        _layers[l].create(layerDescs[l]._width, layerDescs[l]._height, layerDescs[l]._chunkSize, l < layerDescs.size() - 1, visibleLayerDescs, seed + l + 1);
+        _layers[l].create(layerDescs[l]._width, layerDescs[l]._height, layerDescs[l]._chunkSize, l < layerDescs.size() - 1 ? 2 : 1, visibleLayerDescs, seed + l + 1);
     }
 }
 
@@ -114,13 +105,7 @@ bool Hierarchy::load(const std::string &fileName) {
 
 	_alphas.resize(numLayers);
     _betas.resize(numLayers);
-    _deltas.resize(numLayers);
     _gammas.resize(numLayers);
-    _traceCutoffs.resize(numLayers);
-    _epsilons.resize(numLayers);
-
-    _rewardSums.resize(numLayers);
-    _rewardCounts.resize(numLayers);
 
 	s >> _inputTemporalHorizon;
     s >> _numInputs;
@@ -145,7 +130,7 @@ bool Hierarchy::load(const std::string &fileName) {
 
         _ticksPerUpdate[l] = l == 0 ? 1 : ticksPerUpdate; // First layer always 1
 
-        s >> _alphas[l] >> _betas[l] >> _deltas[l] >> _gammas[l] >> _traceCutoffs[l] >> _epsilons[l] >> _rewardSums[l] >> _rewardCounts[l];
+        s >> _alphas[l] >> _betas[l] >> _gammas[l];
 
         _layers[l].createFromStream(s);
 
@@ -186,17 +171,11 @@ void Hierarchy::save(const std::string &fileName) {
 
         s << temporalHorizon << " " << _ticksPerUpdate[l] << std::endl;
 
-        s << _alphas[l] << " " << _betas[l] << " " << _deltas[l] << " " << _gammas[l] << " " << _traceCutoffs[l] << " " << _epsilons[l] << " " << _rewardSums[l] << " " << _rewardCounts[l] << std::endl;
+        s << _alphas[l] << " " << _betas[l] << " " << _gammas[l] << std::endl;
 
         _layers[l].writeToStream(s);
 
         for (int v = 0; v < _histories[l].size(); v++) {
-            int w = _layers[l].getVisibleLayerDesc(v)._width;
-            int h = _layers[l].getVisibleLayerDesc(v)._height;
-            int c = _layers[l].getVisibleLayerDesc(v)._chunkSize;
-            
-            _histories[l][v].resize((w / c) * (h / c), 0);
-
             for (int i = 0; i < _histories[l][v].size(); i++)
                 s << _histories[l][v][i] << " ";
 
@@ -205,7 +184,7 @@ void Hierarchy::save(const std::string &fileName) {
     }
 }
 
-void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem &cs, bool learn, float reward) {
+void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem &cs, bool learn) {
     assert(inputs.size() == _numInputs);
 
     _ticks[0] = 0;
@@ -223,18 +202,15 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
             _histories.front()[0 + temporalHorizon * in] = inputs[in];
     }
 
-    std::vector<bool> update(_layers.size(), false);
+    std::vector<bool> updates(_layers.size(), false);
 
     for (int l = 0; l < _layers.size(); l++) {
-        _rewardSums[l] += reward;
-        _rewardCounts[l] += 1.0f;
-
         if (l == 0 || _ticks[l] >= _ticksPerUpdate[l]) {
             _ticks[l] = 0;
 
-            update[l] = true;
-
-            _layers[l].forward(_histories[l], cs, learn ? _alphas[l] : 0.0f);
+            updates[l] = true;
+            
+            _layers[l].forward(_histories[l], cs, learn ? _alphas[l] : 0.0f, learn ? _gammas[l] : 1.0f);
 
             // Add to next layer's history
             if (l < _layers.size() - 1) {
@@ -254,20 +230,15 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
 
     // Backward
     for (int l = _layers.size() - 1; l >= 0; l--) {
-        if (update[l]) {
+        if (updates[l]) {
             std::vector<std::vector<int>> feedBack;
 
             if (l < _layers.size() - 1)
                 feedBack = { _layers[l]._hiddenStates, _layers[l + 1]._predictions[_ticksPerUpdate[l + 1] - 1 - _ticks[l + 1]] };
             else
                 feedBack = { _layers[l]._hiddenStates };
-
-            float r = _rewardSums[l] / std::max(1.0f, _rewardCounts[l]);
-
-            _layers[l].backward(feedBack, cs, r, learn ? _betas[l] : 0.0f, learn ? _deltas[l] : 0.0f, _gammas[l], _traceCutoffs[l], learn ? _epsilons[l] : 0.0f);
-
-            _rewardSums[l] = 0.0f;
-            _rewardCounts[l] = 0.0f;
+            
+            _layers[l].backward(feedBack, cs, learn ? _betas[l] : 0.0f);
         }
     }
 }
