@@ -1,3 +1,8 @@
+1.2.1 November, 2017
+====================
+
+- Adding a video prediction test example
+
 1.2 October, 2017
 ===================
 

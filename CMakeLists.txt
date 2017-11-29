@@ -32,20 +32,22 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-option(BUILD_TESTS OFF)
-message(STATUS "Build tests: ${BUILD_TESTS}")
+option(BUILD_EXAMPLES OFF)
+message(STATUS "Build examples: ${BUILD_EXAMPLES}")
 
 option(BUILD_PREENCODERS OFF)
 message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
 
 
 ############################################################################
-# Add SFML
-find_package(SFML 2 COMPONENTS system network)
+# Find SFML
+#set(SFML_STATIC_LIBRARIES TRUE)
+find_package(SFML 2 COMPONENTS system network window graphics)
 
 if(SFML_FOUND)
   #message(STATUS "SFML incs: " ${SFML_INCLUDE_DIR})
   #message(STATUS "SFML libs: " ${SFML_LIBRARIES})
+  #message(STATUS "SFML deps: " ${SFML_DEPENDENCIES})
   include_directories(${SFML_INCLUDE_DIR})
 endif()
 
@@ -110,13 +112,24 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   if(BITNESS EQUAL 64)
     set_target_properties(EOgmaNeo PROPERTIES COMPILE_FLAGS "-m64" LINK_FLAGS "-m64")
   endif()
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 endif()
 
-if(BUILD_TESTS)
-  add_executable(TestSaveLoad source/testing/TestSaveLoad.cpp)
-  target_link_libraries(TestSaveLoad PUBLIC EOgmaNeo)
-endif()
+if(BUILD_EXAMPLES)
+  add_executable(SaveLoad source/examples/SaveLoad.cpp)
+  set_property(TARGET SaveLoad PROPERTY CXX_STANDARD 14)
+  set_property(TARGET SaveLoad PROPERTY CXX_STANDARD_REQUIRED ON)
+  target_link_libraries(SaveLoad EOgmaNeo)
 
+  if(SFML_FOUND AND OpenCV_FOUND)
+    add_executable(VideoPrediction source/examples/VideoPrediction.cpp)
+    set_property(TARGET VideoPrediction PROPERTY CXX_STANDARD 14)
+    set_property(TARGET VideoPrediction PROPERTY CXX_STANDARD_REQUIRED ON)
+    target_link_libraries(VideoPrediction EOgmaNeo ${SFML_LIBRARIES} ${SFML_DEPENDENCIES} ${OpenCV_LIBS})
+  endif()
+endif()
+    
 # Offer the user the choice of overriding the installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(INSTALL_INCLUDE_DIR include/oegmaneo CACHE PATH "Installation directory for header files")

@@ -10,7 +10,7 @@
 
 [![Join the chat at https://gitter.im/ogmaneo/Lobby](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/ogmaneo/Lobby) [![Build Status](https://travis-ci.org/ogmacorp/EOgmaNeo.svg?branch=master)](https://travis-ci.org/ogmacorp/EOgmaNeo)
 
-## Introduction 
+## Introduction
 
 Welcome to the EOgmaNeo library!
 
@@ -87,6 +87,8 @@ Currently available pre-encoders:
 
 You may need to develop your own pre-encoders depending on the task. Sometimes, data can be binned into chunks without any real pre-encoding, such as bounded scalars.
 
+Further examples of using the pre-encoders and EOgmaNeo can be found in the `source/examples` directory. A `README.md` file in that directory explains each example application found there.
+
 ### Optional features
 
 #### SFML (NeoVis)
@@ -145,7 +147,7 @@ Be aware that all these functions contain certain remapping of input arrays into
 
 EOgmaNeo requires: a C++1x compiler, and [CMake](https://cmake.org/).
 
-Optional requirements include [OpenCV](http://opencv.org/) (for additional pre-encoders) and [SFML](https://www.sfml-dev.org/) (for connecting to [NeoVis](https://github.com/ogmacorp/NeoVis) visualization tool).
+Optional requirements include [OpenCV](http://opencv.org/) (for additional pre-encoders) and [SFML](https://www.sfml-dev.org/) (for connecting to the [NeoVis](https://github.com/ogmacorp/NeoVis) visualization tool).
 
 The library has been tested extensively on:
 
@@ -172,10 +174,17 @@ The `cmake` command can be passed the following optional settings:
 
 - `CMAKE_INSTALL_PREFIX` to determine where to install the library and header files. Default is a system-wide install location.
 - `BUILD_PREENCODERS` to include the Random and Corner pre-encoders into the library.
+- `BUILD_EXAMPLES` to include the C++ examples found in the `source/examples/` directory.
 
 `make install` can be run to install the library. `make uninstall` can be used to uninstall the library.
 
 On Windows it is recommended to use `cmake-gui` to define which generator to use and specify optional build parameters.
+
+## Examples
+
+C++ examples can be found in the `source/examples` directory. Python, Java, and C# examples can be found in their sub-directories.
+
+Refer to `README.md` files found in each sub-directory for further information.
 
 ## Contributions
 

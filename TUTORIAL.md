@@ -10,11 +10,11 @@
 
 The following is a brief tutorial to walk you through the usage of the EOgmaNeo library. We will use EOgmaNeo to memorize a very simple time series – a sinosodial one. This example should in particular demonstrate how to present data to a EOgmaNeo Sparse Predictive Hierarchy (SPH).
 
-In this tutorial, will will be using the EOgmaNeo Python bindings. The interface is nearly identical in the regular C++ library, and similar in other bindings as well.
+In this tutorial, we will be using the EOgmaNeo Python bindings. The interface is nearly identical to the regular C++ library, and similar in other language bindings as well.
 
 ## Python bindings – Installation
 
-Once you have downloaded the EOgmaNeo repository, you must simply proceed to the /Python subdirectory, and run Python on the setup.py script in that directory. This should compile the library and install the bindings. To test the installation, simply try importing ```import eogmaneo```.
+Once you have downloaded the EOgmaNeo repository, you must simply proceed to the `/Python` subdirectory, and run Python on the setup.py script in that directory, e.g. `python3 setup.py install`. This should compile the library and install the Python binding. To test the installation, simply try importing `import eogmaneo`.
 
 ## Overview
 
@@ -26,11 +26,15 @@ Each layer has an associated chunk size – this is the size of one “tile” o
 
 <img src="chunkedSDR.png" alt="Chunked SDR" style="width: 400px;"/>
 
-A chunked SDR is used by EOgmaNeo as a way of representing data. A particular chunked SDR state may represent object trajectories, motor commands, an image, a number of images in sequence (video), abstract concepts, timing information – any information can be mapped to a chunked SDR. What is important about this particular format, however, is that is is both sparse, and locally sensitive. This means that very few units are active at a time, and similar chunked SDRs represent similar information.
+A chunked SDR is used by EOgmaNeo as a way of representing data. A particular chunked SDR state may represent object trajectories, motor commands, an image, a number of images in sequence (video), abstract concepts, timing information – any information can be mapped to a chunked SDR.
 
-These two properties permit both online learning and generalization, respectively. Online learning requires that the representation be sparse, as to avoid overlap in a representation. However, too sparse isn’t good either – it ends up acting like a lookup table. We find that a tradeoff produces optimal results, resulting in both online learning capabilities as well as generalizability.
+What is important about this particular format, however, is that it is both sparse, and locally sensitive. This means that very few units are active at a time, and similar chunked SDRs represent similar information.
 
-Now what remains is a problem of converting to a chunked SDR format. For this, we need a sort of “pre-encoder” (encoders are another concept used in EOgmaNeo, and are seperate from pre-encoders for the most part). A pre-encoder maps from some data to a chunked SDR format.
+These two properties permit both online learning and generalization, respectively. Online learning requires that the representation be sparse, as to avoid overlap in a representation. However, too sparse isn’t good either – it ends up acting like a lookup table. We find that a trade-off produces optimal results, resulting in both online learning capabilities as well as generalizability.
+
+## Pre-Encoding
+
+Now what remains is a problem of converting to a chunked SDR format. For this, we need a sort of “pre-encoder” (encoders are another concept used in EOgmaNeo, and are separate from pre-encoders for the most part). A pre-encoder maps from some data to a chunked SDR format.
 
 We find that specific pre-encoders are good at specific tasks, although general-purpose pre-encoders exist as well. Sparse coding, in particular, is a good way to learn a particular encoder. However, sparse coding is often slow, so we instead found that simpler methods often work better in terms of processing requirements, while still delivering reasonable end results.
 
@@ -44,7 +48,7 @@ Once a pre-encoder maps the data to a chunked SDR, the data can be learned from 
 
 ## Sine Wave
 
-Now that we know about pre-encoding, we can tackle the simple task of memorizing a sine wave. For this task, we want to proceed one timestep at a time (streaming), such that the sine wave is presented as a sequence of scalars. We therefore need a way to map a scalar to a chunked SDR. There are two options that seem appropriate for this task: Use a RandomEncoder to map a single scalar to a chunked SDR, or perform a “raw” encoding, by simply bucketing the scalar (which is bounded in ```[-1, 1]``` since it is a sine wave) into a single chunk. In this situation, a random encoder basially just buckets the scalar at random intervals, while with a manual approach we can set the bucket interval precisely, so we will choose this one for now.
+Now that we know about pre-encoding, we can tackle the simple task of memorizing a sine wave. For this task, we want to proceed one timestep at a time (streaming), such that the sine wave is presented as a sequence of scalars. We therefore need a way to map a scalar to a chunked SDR. There are two options that seem appropriate for this task: Use a RandomEncoder to map a single scalar to a chunked SDR, or perform a “raw” encoding, by simply bucketing the scalar (which is bounded in ```[-1, 1]``` since it is a sine wave) into a single chunk. In this situation, a random encoder basically just buckets the scalar at random intervals, while with a manual approach we can set the bucket interval precisely, so we will choose this one for now.
 
 With the bucket approach, encoding a bounded scalar is as simple as rescaling the value such that it fits into buckets uniformly. A single chunk can represent this bucketed scalar, resulting in a chunk where the position of the active unit linearly encodes the scalar.
 
@@ -63,7 +67,7 @@ bounds = (-1.0, 1.0) # Range of value
 chunkedSDR = [ int((valueToEncode - bounds[0]) / (bounds[1] - bounds[0]) * (unitsPerChunk - 1) + 0.5) ]
 ```
 
-However, before we use this, we first need to build a hierarchy. To do this, we need to define several LayerDesc structures. These describe each layer, with several tunable parameters. The purpose of each parameter is beyond the scope of this tutorial. Defaults will suffice for most tasks, but here is an example:
+However, before we use this, we first need to build a hierarchy. To do this, we need to define several LayerDesc structures. These describe each layer, with several tuneable parameters. The purpose of each parameter is beyond the scope of this tutorial. Defaults will suffice for most tasks, but here is an example:
 
 ```python
 lds = []
@@ -97,11 +101,11 @@ The second parameter is the chunk size of each input layer. Naturally, our singl
 
 The third parameter specifies which input layer to predict. This is mostly for optimization purposes, some layers don’t need to be predicted (input only), and can therefore be ignored.
 
-The fourth parameter is simply the list of layer descs.
+The fourth parameter is simply the list of `LayerDesc`.
 
 Finally, the fifth parameter is a seed for the internal random number generator.
 
-We will also need a ComputeSystem object, which contains a thread pool. Simply create one with your desired thread count (typically the number of cores your machine has):
+We will also need a `ComputeSystem` object, which contains a thread pool. Simply create one with your desired thread count (typically the number of cores your machine has):
 
 ```python
 system = eogmaneo.ComputeSystem(4)
@@ -120,7 +124,7 @@ for t in range(1000):
     h.step([ chunkedSDR ], system, True)
 ```
 
-The step function runs a single timestep of the hierarchy, and automatically generates the predictions of the next timestep. It takes a list of chunked SDRs (one for each input layer), the system object, and a boolean that determines whether or not learning is enabled.
+The step function runs a single timestep of the hierarchy, and automatically generates the predictions of the next timestep. It takes a list of chunked SDRs (one for each input layer), the system object, and a Boolean that determines whether or not learning is enabled.
 
 To retrieve a predicted SDR, we simply call:
 
