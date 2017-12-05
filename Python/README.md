@@ -41,7 +41,9 @@ Further information on Python compatible Windows compilers can be found [here](h
 
 As noted in the main README.md file, an [OpenCV](http://opencv.org/) interop class is built into the EOgmaNeo library if the CMake build process finds OpenCV on your system. 
 
-**Note:** For the CMake build process to find OpenCV make sure that a `OpenCV_DIR` environment variable is set to the location of OpenCV, specifically the directory that contains the `OpenCVConfig.cmake` file. If this configuration file is not found the OpenCV interop code is not included in the library.
+**Notes:**
+- For the CMake build process to find OpenCV make sure that a `OpenCV_DIR` environment variable is set to the location of OpenCV, specifically the directory that contains the `OpenCVConfig.cmake` file. If this configuration file is not found the OpenCV interop code is not included in the library.
+- On Mac OSX, Homebrew can be used to cleanly install OpenCV, for example `brew install opencv3 --with-contrib --with-python3 --with-ffmpeg`
 
 ## Installation
 
@@ -56,6 +58,8 @@ or create a wheel file for installation via pip:
 > python3 setup.py bdist_wheel  
 > pip3 install dist/*.whl --user  
 
+The `setup.cfg` file defines additional CMake build variables. Currently they enable the building of pre-encoders, and disables building of the [NeoVis](https://github.com/ogmacorp/NeoVis) link.
+
 ## Importing and Setup
 
 The EOgmaNeo Python module can be imported using:
@@ -65,6 +69,8 @@ import eogmaneo
 ```
 
 Refer to the `sineWaveExample.py` example for further details.
+
+The `source/examples/VideoPrediction.cpp` example has also been ported to Python, and can be found in the `videoPrediction.py` file.
 
 ## Contributions
 
