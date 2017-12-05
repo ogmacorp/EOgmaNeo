@@ -34,15 +34,21 @@ endif()
 option(BUILD_PREENCODERS OFF)
 message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
 
+option(BUILD_NEOVIS_LINK ON)
+message(STATUS "Build NeoVis link: ${BUILD_NEOVIS_LINK}")
+
 
 ############################################################################
 # Add SFML
 find_package(SFML 2 COMPONENTS system network)
 
-if(SFML_FOUND)
+if(SFML_FOUND AND BUILD_NEOVIS_LINK)
   #message(STATUS "SFML incs: " ${SFML_INCLUDE_DIR})
   #message(STATUS "SFML libs: " ${SFML_LIBRARIES})
   include_directories(${SFML_INCLUDE_DIR})
+else()
+  message(STATUS "Disabling SFML")
+  set(SFML_FOUND OFF)
 endif()
 
 
@@ -123,6 +129,7 @@ if(${_CONDA_RESULT} STREQUAL "0")
     string(TOLOWER ${_CONDA_OUTPUT} _CONDA_OUTPUT)
     string(REPLACE "\\" "/" _CONDA_OUTPUT ${_CONDA_OUTPUT})
     string(REGEX MATCH "anaconda" ANACONDA_PYTHON_FOUND "${_CONDA_OUTPUT}")
+    string(REGEX MATCH "miniconda" ANACONDA_PYTHON_FOUND "${_CONDA_OUTPUT}")
 endif()
 
 if(ANACONDA_PYTHON_FOUND)
