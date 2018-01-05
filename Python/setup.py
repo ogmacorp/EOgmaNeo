@@ -187,7 +187,7 @@ extension_mod = Extension(
 
 setup(
     name="eogmaneo",
-    version="1.2.3",
+    version="1.2.4",
     description="Python bindings for the EOgmaNeo library",
     long_description='https://github.com/ogmacorp/EOgmaNeo',
     author='Ogma Intelligent Systems Corp',
