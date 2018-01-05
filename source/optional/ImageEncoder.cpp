@@ -8,6 +8,8 @@
 
 #include "ImageEncoder.h"
 
+#include "Layer.h"
+
 #include <algorithm>
 #include <fstream>
 
@@ -40,7 +42,7 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
     _radius = radius;
 
-    std::uniform_real_distribution<float> weightDist(0.99f, 1.0f);
+    std::uniform_real_distribution<float> weightDist(0.9f, 1.0f);
 
     int diam = radius * 2 + 1;
 
@@ -48,15 +50,10 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
 	int units = hiddenWidth * hiddenHeight;
 
-    _weights0.resize(hiddenWidth * hiddenHeight * weightsPerUnit);
-    _weights1.resize(hiddenWidth * hiddenHeight * weightsPerUnit);
-    _weights2.resize(hiddenWidth * hiddenHeight * weightsPerUnit);
+    _weights.resize(hiddenWidth * hiddenHeight * weightsPerUnit);
 
-    for (int w = 0; w < _weights0.size(); w++) {
-        _weights0[w] = weightDist(rng);
-        _weights1[w] = weightDist(rng);
-        _weights2[w] = 1.0f;
-    }
+    for (int w = 0; w < _weights.size(); w++)
+        _weights[w] = weightDist(rng);
 
 	int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
@@ -115,28 +112,48 @@ const std::vector<float> &ImageEncoder::reconstruct(const std::vector<int> &hidd
 	
 	// Rescale
 	for (int i = 0; i < _recon.size(); i++)
-		_recon[i] /= std::max(0.0001f, _count[i]);
+		_recon[i] = sigmoid(_recon[i] / std::max(0.0001f, _count[i]));
 
     return _recon;
 }
 
-void ImageEncoder::learn(float alpha, ComputeSystem &cs) {
+void ImageEncoder::addSample(const std::vector<float> &input, int maxSamples) {
+    _samples.insert(_samples.begin(), input);
+
+    if (_samples.size() > maxSamples)
+        _samples.resize(maxSamples);
+}
+
+void ImageEncoder::learn(float alpha, ComputeSystem &cs, int iter) {
+    if (_samples.empty())
+        return;
+
+    std::uniform_int_distribution<int> sampleDist(0, _samples.size() - 1);
+
     int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 
-    for (int cx = 0; cx < chunksInX; cx++)
-        for (int cy = 0; cy < chunksInY; cy++) {
-            std::shared_ptr<ImageLearnWorkItem> item = std::make_shared<ImageLearnWorkItem>();
+    for (int i = 0; i < iter; i++) {
+        int index = sampleDist(cs._rng);
 
-            item->_cx = cx;
-            item->_cy = cy;
-            item->_pEncoder = this;
-            item->_alpha = alpha;
+        activate(_samples[index], cs);
 
-            cs._pool.addItem(item);
-        }
+        reconstruct(_hiddenStates, cs);
 
-    cs._pool.wait();
+        for (int cx = 0; cx < chunksInX; cx++)
+            for (int cy = 0; cy < chunksInY; cy++) {
+                std::shared_ptr<ImageLearnWorkItem> item = std::make_shared<ImageLearnWorkItem>();
+
+                item->_cx = cx;
+                item->_cy = cy;
+                item->_pEncoder = this;
+                item->_alpha = alpha;
+
+                cs._pool.addItem(item);
+            }
+
+        cs._pool.wait();
+    }
 }
 
 void ImageEncoder::activate(int cx, int cy) {
@@ -178,7 +195,7 @@ void ImageEncoder::activate(int cx, int cy) {
                         int wi = index + weightsPerUnit * (x + y * _hiddenWidth);
                         int ii = vx + vy * _inputWidth;
 
-                        value += _input[ii] * _weights0[wi] + (1.0f - _input[ii]) * _weights1[wi];
+                        value += _input[ii] * _weights[wi];
                     }
                 }
 
@@ -228,7 +245,7 @@ void ImageEncoder::reconstruct(int cx, int cy) {
 				int vy = lowerY + sy;
 
 				if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
-					_recon[vx + vy * _inputWidth] += _weights0[index + weightsPerUnit * (x + y * _hiddenWidth)] + (1.0f - _weights1[index + weightsPerUnit * (x + y * _hiddenWidth)]);
+					_recon[vx + vy * _inputWidth] += _weights[index + weightsPerUnit * (x + y * _hiddenWidth)];
 					_count[vx + vy * _inputWidth] += 2.0f;
 				}
 			}
@@ -266,10 +283,8 @@ void ImageEncoder::learn(int cx, int cy, float alpha) {
             int vx = lowerX + sx;
             int vy = lowerY + sy;
 
-            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
-                _weights0[index + weightsPerUnit * (x + y * _hiddenWidth)] += alpha * std::min(0.0f, _input[vx + vy * _inputWidth] - _weights0[index + weightsPerUnit * (x + y * _hiddenWidth)]);
-                _weights1[index + weightsPerUnit * (x + y * _hiddenWidth)] += alpha * std::min(0.0f, 1.0f - _input[vx + vy * _inputWidth] - _weights1[index + weightsPerUnit * (x + y * _hiddenWidth)]);
-            }
+            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight)
+                _weights[index + weightsPerUnit * (x + y * _hiddenWidth)] += alpha * std::min(0.0f, (_input[vx + vy * _inputWidth] - _recon[vx + vy * _inputWidth]));
         }
 }
 
@@ -278,8 +293,8 @@ void ImageEncoder::save(const std::string &fileName) {
 
     s << _inputWidth << " " << _inputHeight << " " << _hiddenWidth << " " << _hiddenHeight << " " << _chunkSize << " " << _radius << std::endl;
 
-    for (int w = 0; w < _weights0.size(); w++)
-        s << _weights0[w] << " " << _weights1[w] << " " << _weights2[w] << std::endl;
+    for (int w = 0; w < _weights.size(); w++)
+        s << _weights[w] << std::endl;
 }
 
 bool ImageEncoder::load(const std::string &fileName) {
@@ -296,12 +311,10 @@ bool ImageEncoder::load(const std::string &fileName) {
 
 	int units = _hiddenWidth * _hiddenHeight;
 
-    _weights0.resize(_hiddenWidth * _hiddenHeight * weightsPerUnit);
-    _weights1.resize(_hiddenWidth * _hiddenHeight * weightsPerUnit);
-    _weights2.resize(_hiddenWidth * _hiddenHeight * weightsPerUnit);
+    _weights.resize(_hiddenWidth * _hiddenHeight * weightsPerUnit);
 
-    for (int w = 0; w < _weights0.size(); w++)
-        s >> _weights0[w] >> _weights1[w] >> _weights2[w];
+    for (int w = 0; w < _weights.size(); w++)
+        s >> _weights[w];
 
 	int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;

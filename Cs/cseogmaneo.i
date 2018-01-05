@@ -20,11 +20,12 @@
 #include "ComputeSystem.h"
 #include "Layer.h"
 #include "Hierarchy.h"
-#include "Agent.h"
 #include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
-#include "ImageEncoder.h"
 #include "KMeansEncoder.h"
+#include "ImageEncoder.h"
+#include "Position2DEncoder.h"
+#include "RLEncoder.h"
 #endif
 #ifdef SFML_FOUND
 #include "VisAdapter.h"
@@ -37,29 +38,25 @@
 %template(StdVeci) std::vector<int>;
 %template(Std2DVeci) std::vector<std::vector<int> >;
 %template(StdPairi) std::pair<int, int>;
+%template(StdPairf) std::pair<float, float>;
 %template(StdVecPairi) std::vector<std::pair<int, int> >;
 %template(StdVecLayerDesc) std::vector<eogmaneo::LayerDesc>;
-%template(StdVecQLayerDesc) std::vector<eogmaneo::QLayerDesc>;
 %template(StdVecf) std::vector<float>;
 %template(Std2DVecf) std::vector<std::vector<float> >;
 %template(StdVecb) std::vector<bool>;
 
 %ignore eogmaneo::ForwardWorkItem;
 %ignore eogmaneo::BackwardWorkItem;
-%ignore eogmaneo::PredictionWorkItem;
-
-%ignore eogmaneo::QForwardWorkItem;
-%ignore eogmaneo::QBackwardWorkItem;
-%ignore eogmaneo::QLearnWorkItem;
 
 %include "ComputeSystem.h"
 %include "Layer.h"
 %include "Hierarchy.h"
-%include "Agent.h"
 %include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
-%include "ImageEncoder.h"
 %include "KMeansEncoder.h"
+%include "ImageEncoder.h"
+%include "Position2DEncoder.h"
+%include "RLEncoder.h"
 #endif
 
 #ifdef SFML_FOUND

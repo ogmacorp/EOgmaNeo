@@ -80,14 +80,15 @@ void ConstructEOgmaNeoHierarchy() {
         ld._width = hiddenWidth;
         ld._height = hiddenHeight;
         ld._chunkSize = chunkSize;
-        ld._radius = radius;
+
+        ld._forwardRadius = radius;
+        ld._backwardRadius = radius;
 
         ld._ticksPerUpdate = 2;
         ld._temporalHorizon = 2;
 
         ld._alpha = 0.5f;
         ld._beta = 0.1f;
-        ld._gamma = 0.0f;
 
         lds.push_back(ld);
 
@@ -198,7 +199,7 @@ int main() {
 
     // Increase number of presentations for the one-arm clock video
     if (videoFileName == "Clock-OneArm.mp4") {
-        numPreEncoderIters *= 2;
+        numPreEncoderIters *= 4;
     }
 
 
@@ -299,7 +300,8 @@ int main() {
             inputs.push_back(imagePreEncoder.activate(input, *cs));
 
             std::vector<float> output = imagePreEncoder.reconstruct(inputs[0], *cs);
-            imagePreEncoder.learn(0.05f, *cs);
+            imagePreEncoder.addSample(input);
+            imagePreEncoder.learn(0.5f, *cs);
 
             st = "Source";
             t.setString(st);

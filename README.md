@@ -8,23 +8,24 @@
 
 # EOgmaNeo
 
-[![Join the chat at https://gitter.im/ogmaneo/Lobby](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/ogmaneo/Lobby) [![Build Status](https://travis-ci.org/ogmacorp/EOgmaNeo.svg?branch=master)](https://travis-ci.org/ogmacorp/EOgmaNeo)
-
+[![Join the chat at https://gitter.im/ogmaneo/Lobby](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/ogmaneo/Lobby)
 ## Introduction
 
 Welcome to the EOgmaNeo library!
 
-EOgmaNeo is Ogma Corp's embedded and event based version of OgmaNeo. It is an implementation of Sparse Predictive Hierarchies, and is a fully online sequence predictor. EOgmaNeo currently runs exclusive on the CPU, unlike OgmaNeo. However, for most tasks, it is much faster. It also performs better in terms of end-result.
+EOgmaNeo is Ogma Corp's embedded and event based version of [OgmaNeo](https://github.com/ogmacorp/OgmaNeo)
 
-EOgmaNeo performs some optimizations not yet present in OgmaNeo, resulting in a massive speed boost.
+It is our _primary_ and _preferred_ implementation of Sparse Predictive Hierarchies, a fully online sequence predictor.
 
-This library is intended primarily for use in weaker hardware such as the Raspberry Pi, where it will run happily at 60FPS with ~10,000,000 synapses.
+EOgmaNeo currently runs exclusive on the CPU, unlike OgmaNeo. However, for most tasks, it is much faster. It also performs better in terms of end-result.
+
+EOgmaNeo performs some optimizations not yet present in OgmaNeo, resulting in a massive speed boost. For example, on weaker hardware such as the Raspberry Pi it will run happily at 60FPS with ~10,000,000 synapses.
 
 We used this software to build a small self-contained online-learning self driving model car: [Blog post](https://ogma.ai/2017/06/self-driving-car-learns-online-and-on-board-on-raspberry-pi-3/)
 
 The advantage of our software over standard Deep Learning techniques is primarily speed. A single Raspberry Pi 3 is enough to run simulations of networks with tens of millions of synapses at high framerates, while Deep Learning is often restricted to offline training on very large and expensive GPUs.
 
-Bindings to Python, C#, and Java are also included. The binding APIs approximately mimic the C++ API. Refer to the README.md files in each subdirectory to discover more about each binding, and how to build and use them.
+Bindings to Python, C#, and Java are also included. The binding APIs approximately mimic the C++ API. Refer to README.md files in each subdirectory to discover more about each binding, and how to build and use them.
 
 ## Overview
 

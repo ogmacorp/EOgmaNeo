@@ -30,10 +30,13 @@ namespace eogmaneo {
         */
 		int _chunkSize;
 
+        //!@{
         /*!
-        \brief Radius of forward and backward sparse weight matrices.
+        \brief Radii of forward and backward sparse weight matrices.
         */
-		int _radius;
+		int _forwardRadius;
+        int _backwardRadius;
+        //!@}
 
         /*!
         \brief Number of ticks a layer takes to update (relative to previous layer).
@@ -46,28 +49,23 @@ namespace eogmaneo {
 		int _temporalHorizon;
 
         /*!
-        \brief Feed forward learning rate (encoder).
+        \brief Encoder learning rate.
         */
         float _alpha;
 
         /*!
-        \brief Feed back learning rate (decoder).
+        \brief Decoder learning rate.
         */
         float _beta;
-
-        /*!
-        \brief Solidification decay.
-        */
-        float _gamma;
 
         /*!
         \brief Initialize defaults.
         */
 		LayerDesc()
-			: _width(36), _height(36), _chunkSize(6),
-			_radius(9),
+			: _width(24), _height(24), _chunkSize(6),
+			_forwardRadius(9), _backwardRadius(9),
 			_ticksPerUpdate(2), _temporalHorizon(2),
-			_alpha(0.5f), _beta(0.1f), _gamma(0.0f)
+			_alpha(0.001f), _beta(0.001f)
 		{}
 	};
 
@@ -82,7 +80,8 @@ namespace eogmaneo {
 
         std::vector<float> _alphas;
         std::vector<float> _betas;
-        std::vector<float> _gammas;
+
+        std::vector<bool> _updates;
 
         std::vector<int> _ticks;
         std::vector<int> _ticksPerUpdate;
@@ -118,9 +117,9 @@ namespace eogmaneo {
         \param inputs vector of SDR vectors in chunked format.
         \param cs compute system to be used.
         \param learn whether learning should be enabled, defaults to true.
-        \param reward reinforcement signal, defaults to 0.
+        \param topFeedBack SDR vector in chunked format of top-level feedback state.
         */
-        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true);
+        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true, const std::vector<int> &topFeedBack = {});
 
         /*!
         \brief Get the number of (hidden) layers.
@@ -151,6 +150,13 @@ namespace eogmaneo {
             return _betas[l];
         }
         //!@}
+
+        /*!
+        \brief Whether this layer received on update this timestep.
+        */
+        bool getUpdate(int l) const {
+            return _updates[l];
+        }
 
         /*!
         \brief Get current layer ticks, relative to previous layer.

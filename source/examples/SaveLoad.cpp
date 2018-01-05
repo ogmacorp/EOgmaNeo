@@ -33,7 +33,7 @@ int main() {
     const int layerSize = 16;
     const int chunkSize = 8;
 
-    const int unitsPerChunk = chunkSize;
+    const int unitsPerChunk = chunkSize * chunkSize;
 
     const std::vector<float> bounds = { -1.0f, 1.0f };
 
@@ -47,9 +47,10 @@ int main() {
         ld._width = layerSize;
         ld._height = layerSize;
         ld._chunkSize = chunkSize;
+        ld._forwardRadius = 12;
+        ld._backwardRadius = 12;
         ld._alpha = 0.1f;
         ld._beta = 0.01f;
-        ld._gamma = 0.0f;
         ld._temporalHorizon = 2;
 
         lds.push_back(ld);

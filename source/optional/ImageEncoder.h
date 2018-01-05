@@ -79,9 +79,7 @@ namespace eogmaneo {
 
         std::vector<float> _hiddenActivations;
 
-        std::vector<float> _weights0;
-		std::vector<float> _weights1;
-		std::vector<float> _weights2;
+        std::vector<float> _weights;
 		
 		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);
@@ -91,6 +89,8 @@ namespace eogmaneo {
 		std::vector<float> _input;
 		std::vector<float> _recon;
 		std::vector<float> _count;
+
+        std::vector<std::vector<float>> _samples;
 		
     public:
         /*!
@@ -132,12 +132,17 @@ namespace eogmaneo {
         const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs);
 
         /*!
+        \brief Add a training sample.
+        */
+        void addSample(const std::vector<float> &input, int maxSamples = 100);
+
+        /*!
         \brief Experimental learning functionality.
         Requires that reconstruct(...) has been called, without another call to activate(...).
         \param alpha weight learning rate.
         \param cs compute system to be used.
         */
-        void learn(float alpha, ComputeSystem &cs);
+        void learn(float alpha, ComputeSystem &cs, int iter = 5);
 
         /*!
         \brief Save to a file.

@@ -274,7 +274,7 @@ void KMeansEncoder::learn(int cx, int cy, float alpha, float gamma, float minDis
         int x = cx * _chunkSize + winX;
         int y = cy * _chunkSize + winY;
 
-        if (_hiddenActivations[x + y * _hiddenWidth] < -minDistance) { // && _hiddenStates[cx + cy * chunksInX] != _hiddenStatesPrev[cx + cy * chunksInX]
+        {
             // Compute value
             for (int sx = 0; sx < diam; sx++)
                 for (int sy = 0; sy < diam; sy++) {
