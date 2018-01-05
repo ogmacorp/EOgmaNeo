@@ -1,3 +1,8 @@
+1.2.4 January, 2018
+===================
+
+- Hot fix for building new pre-encoders
+
 1.2.3 January, 2018
 ===================
 
