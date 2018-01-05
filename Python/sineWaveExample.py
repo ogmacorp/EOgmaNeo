@@ -30,7 +30,6 @@ for i in range(3):
     ld._forwardRadius = ld._backwardRadius = 12
     ld._alpha = 0.1
     ld._beta = 0.01
-    ld._delta = 0.0
     ld._temporalHorizon = 2
 
     lds.append(ld)

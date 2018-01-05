@@ -1,3 +1,11 @@
+1.2.3 January, 2018
+===================
+
+- Bayesian changes
+- Simplified Image pre-encoder
+- Removal of reinforcement learning Agent
+- Example of a reinforcement learning pre-encoder
+
 1.2.2 December, 2017
 ====================
 

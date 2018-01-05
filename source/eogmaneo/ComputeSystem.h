@@ -36,9 +36,9 @@ namespace eogmaneo {
 		
 		friend class Layer;
 		friend class Hierarchy;
-		friend class Agent;
 		friend class KMeansEncoder;
         friend class ImageEncoder;
+        friend class RLEncoder;
 
 		friend std::vector<float> whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &cs, int chunkSize);
         friend std::vector<float> sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &cs, int chunkSize);

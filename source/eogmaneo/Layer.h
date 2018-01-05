@@ -20,6 +20,7 @@ namespace eogmaneo {
     \brief Sigmoid function.
     */
     float sigmoid(float x);
+    float safeLog(float x);
 
     /*!
     \brief Forward work item, for internal use only.
@@ -46,30 +47,12 @@ namespace eogmaneo {
     public:
         class Layer* _pLayer;
 
-        int _hiddenChunkIndex;
-
-        std::mt19937 _rng;
-
-        BackwardWorkItem()
-            : _pLayer(nullptr)
-        {}
-
-        void run(size_t threadIndex) override;
-    };
-
-    /*!
-    \brief Prediction work item, for internal use only.
-    */
-    class PredictionWorkItem : public WorkItem {
-    public:
-        class Layer* _pLayer;
-
         int _visibleChunkIndex;
         int _visibleLayerIndex;
         
         std::mt19937 _rng;
 
-        PredictionWorkItem()
+        BackwardWorkItem()
             : _pLayer(nullptr)
         {}
 
@@ -94,10 +77,13 @@ namespace eogmaneo {
         */
 		int _chunkSize;
 
+        //!@{
         /*!
         \brief Radius of sparse weight matrices.
         */
-		int _radius;
+		int _forwardRadius;
+        int _backwardRadius;
+        //!@}
 
         /*!
         \brief Whether or not this visible layer should be predicted (used to save processing power).
@@ -108,8 +94,8 @@ namespace eogmaneo {
         \brief Initialize defaults.
         */
 		VisibleLayerDesc()
-			: _width(36), _height(36), _chunkSize(6),
-			_radius(9),
+			: _width(16), _height(16), _chunkSize(4),
+			_forwardRadius(6), _backwardRadius(6),
             _predict(true)
 		{}
 	};
@@ -124,9 +110,10 @@ namespace eogmaneo {
         int _chunkSize;
 
         std::vector<int> _hiddenStates;
-
+        std::vector<int> _hiddenStatesPrev;
+        
         std::vector<std::vector<float>> _feedForwardWeights;
-        std::vector<std::vector<std::vector<float>>> _predictionWeights;
+        std::vector<std::vector<std::vector<std::pair<float, float>>>> _feedBackWeights;
 
         std::vector<std::vector<float>> _reconActivations;
         std::vector<std::vector<float>> _reconCounts;
@@ -136,20 +123,16 @@ namespace eogmaneo {
         std::vector<VisibleLayerDesc> _visibleLayerDescs;
 
         std::vector<std::vector<int>> _predictions;
-
-        std::vector<std::vector<float>> _predictionActivations;
-        std::vector<std::vector<float>> _predictionCounts;
-        std::vector<std::vector<float>> _predictionActivationsPrev;
+        std::vector<std::vector<float>> _visibleSums;
         
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;
-
-        std::vector<std::vector<int>> _feedBack;
-        std::vector<std::vector<int>> _feedBackPrev;
         
+        std::vector<int> _feedBack;
+        std::vector<int> _feedBackPrev;
+
         float _alpha;
         float _beta;
-        float _gamma;
   
         void createFromStream(std::istream &s);
         void writeToStream(std::ostream &s);
@@ -160,11 +143,11 @@ namespace eogmaneo {
         \param hiddenWidth width of the layer.
         \param hiddenHeight height of the layer.
         \param chunkSize chunk size of the layer.
-        \param numFeedBack amount of feedback from a higher layer.
+        \param hasFeedBack whether this layer has feed back.
         \param visibleLayerDescs descriptor structures for all visible layers this (hidden) layer has.
         \param seed random number generator seed for layer generation.
         */
-        void create(int hiddenWidth, int hiddenHeight, int chunkSize, int numFeedBack, const std::vector<VisibleLayerDesc> &visibleLayerDescs, unsigned long seed);
+        void create(int hiddenWidth, int hiddenHeight, int chunkSize, const std::vector<VisibleLayerDesc> &visibleLayerDescs, unsigned long seed);
 
         /*!
         \brief Forward activation and learning.
@@ -173,7 +156,7 @@ namespace eogmaneo {
         \param alpha feed forward learning rate.
         \param gamma learning decay.
         */
-        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, float alpha, float gamma);
+        void forward(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, float alpha);
 
         /*!
         \brief Backward activation.
@@ -181,7 +164,7 @@ namespace eogmaneo {
         \param cs compute system to be used.
         \param beta feedback learning rate.
         */
-        void backward(const std::vector<std::vector<int> > &feedBack, ComputeSystem &cs, float beta);
+        void backward(const std::vector<int> &feedBack, ComputeSystem &cs, float beta);
 
         //!@{
         /*!
@@ -217,18 +200,19 @@ namespace eogmaneo {
             return _visibleLayerDescs[v];
         }
 
-        /*!
-        \brief Get the number of feedback layers. Usually 1 or 2 (no feedback / with feedback).
-        */
-        int getNumFeedBackLayers() const {
-            return _feedBack.size();
-        }
 
         /*!
         \brief Get hidden states, in chunked format.
         */
         const std::vector<int> getHiddenStates() const {
             return _hiddenStates;
+        }
+
+        /*!
+        \brief Get hidden states, in chunked format.
+        */
+        const std::vector<int> getHiddenStatesPrev() const {
+            return _hiddenStatesPrev;
         }
 
         /*!
@@ -246,20 +230,6 @@ namespace eogmaneo {
         }
 
         /*!
-        \brief Get feedback layer, in chunked format.
-        */
-        const std::vector<int> getFeedBack(int f) const {
-            return _feedBack[f];
-        }
-
-        /*!
-        \brief Get previous timestep feedback layer, in chunked format.
-        */
-        const std::vector<int> getFeedBackPrev(int f) const {
-            return _feedBackPrev[f];
-        }
-
-        /*!
         \brief Get feedforward weights of a particular unit.
         */
         const std::vector<float> &getFeedForwardWeights(int v, int x, int y) const {
@@ -269,17 +239,12 @@ namespace eogmaneo {
         }
 
         /*!
-        \brief Get prediction weights of a particular unit.
+        \brief Get feedback weights of a particular unit.
         */
-        const std::vector<float> &getPredictionWeights(int f, int v, int x, int y) const {
-            int i = v + _visibleLayerDescs.size() * (x + y * _hiddenWidth);
-
-            return _predictionWeights[f][i]; 
-        }
+        std::vector<float> getFeedBackWeights(int v, int f, int x, int y) const;
 
         friend class ForwardWorkItem;
         friend class BackwardWorkItem;
-        friend class PredictionWorkItem;
         friend class Hierarchy;
     };
 }
