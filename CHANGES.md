@@ -1,3 +1,8 @@
+1.2.2 December, 2017
+====================
+
+- Porting the C++ video prediction example to Python
+
 1.2.1 November, 2017
 ====================
 

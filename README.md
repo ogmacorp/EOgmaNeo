@@ -139,9 +139,11 @@ Currently it contains a handful of calls into the following OpenCV C++ functions
 
 Be aware that all these functions contain certain remapping of input arrays into OpenCV Mat types, with appropriate remapping when results are output. Refer to the OpenCVInterop.cpp file to see what input and output mappings occur, and what value ranges are expected in the input array(s).
 
-**Note:** The `LineSegmentDetector` contains extra functionality that takes detected lines and forms them into a sparse chunked representation as it's output. Therefore, the LineSegmentDetector acts as a pre-encoder for an EOgmaNeo hierarchy.
+**Notes:**
+- The `LineSegmentDetector` contains extra functionality that takes detected lines and forms them into a sparse chunked representation as it's output. Therefore, the LineSegmentDetector acts as a pre-encoder for an EOgmaNeo hierarchy.
+- Similar to the `LineSegmentDetector`, the `FastFeatureDetector` contains extra functionality that takes detected corner key points and forms them into a sparse chunked representation as its output. Therefore, it acts as a pre-encoder for an EOgmaNeo hierarchy.
+- On Mac OSX, Homebrew can be used to cleanly install OpenCV, for example `brew install opencv3 --with-contrib --with-python3 --with-ffmpeg`
 
-**Note:** Similar to the `LineSegmentDetector`, the `FastFeatureDetector` contains extra functionality that takes detected corner key points and forms them into a sparse chunked representation as its output. Therefore, it acts as a pre-encoder for an EOgmaNeo hierarchy.
 
 ## Requirements
 
