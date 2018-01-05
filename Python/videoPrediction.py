@@ -160,8 +160,8 @@ print(
     "       The Escape key can be used to skip each step.\n")
 
 
-ITERATIONS = int(CAPTURE_LENGTH / 2)
-PRE_ENCODER_ITERS = int(CAPTURE_LENGTH) # * 2)
+ITERATIONS = int(CAPTURE_LENGTH)
+PRE_ENCODER_ITERS = int(CAPTURE_LENGTH)
 
 # Let the image pre-encoder see the movie more times
 if "Clock-OneArm" in MOVIE:
@@ -202,7 +202,8 @@ for j in range(PRE_ENCODER_ITERS):
         recon = preEncoder.reconstruct(hiddenStates, cs)
 
         # Update the image pre-encoder weighting
-        preEncoder.learn(0.05, cs)
+        preEncoder.addSample(frame.ravel())
+        preEncoder.learn(0.5, cs)
 
         # Scale frame copy to [0, 255] for display
         frame *= 255.0

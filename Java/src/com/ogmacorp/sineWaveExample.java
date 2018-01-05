@@ -40,7 +40,6 @@ public class sineWaveExample {
             ld.set_backwardRadius(12);
             ld.set_alpha(0.1f);
             ld.set_beta(0.01f);
-            ld.set_delta(0.0f);
             ld.set_temporalHorizon(2);
 
             lds.add(ld);
