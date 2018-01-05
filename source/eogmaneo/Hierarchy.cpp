@@ -246,7 +246,7 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
             if (l < _layers.size() - 1)
                 feedBack = _layers[l + 1]._predictions[_ticksPerUpdate[l + 1] - 1 - _ticks[l + 1]];
             else {
-                if (topFeedBack.size() > 0)
+                if (!topFeedBack.empty())
                     feedBack = topFeedBack;
                 else
                     feedBack = _layers[l]._hiddenStates;

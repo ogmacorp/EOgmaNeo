@@ -115,9 +115,9 @@ namespace eogmaneo {
         /*!
         \brief Simulation tick.
         \param inputs vector of SDR vectors in chunked format.
-        \param topGoal SDR vector in chunked format of top-level goal state.
         \param cs compute system to be used.
         \param learn whether learning should be enabled, defaults to true.
+        \param topFeedBack SDR vector in chunked format of top-level feedback state.
         */
         void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true, const std::vector<int> &topFeedBack = {});
 
