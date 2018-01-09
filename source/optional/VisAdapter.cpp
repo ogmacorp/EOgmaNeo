@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -25,7 +25,7 @@ sf::Packet &eogmaneo::operator << (sf::Packet &packet, const WeightSet &weightSe
     sf::Uint16 diam = weightSet._radius * 2 + 1;
 
     for (int i = 0; i < weightSet._weights.size(); i++)
-        packet << weightSet._weights[i];
+        packet << std::get<0>(weightSet._weights[i]) << std::get<1>(weightSet._weights[i]) << std::get<2>(weightSet._weights[i]);
 
     return packet;
 }
@@ -108,37 +108,32 @@ void VisAdapter::update(float waitSeconds) {
 
                 ws._radius = _pHierarchy->getLayer(_caret._layer).getVisibleLayerDesc(v)._forwardRadius;
 
-                ws._weights = _pHierarchy->getLayer(_caret._layer).getFeedForwardWeights(v, caretX, caretY);
+                std::vector<float> wsOriginal = _pHierarchy->getLayer(_caret._layer).getFeedForwardWeights(v, caretX, caretY);
+
+                ws._weights.resize(wsOriginal.size());
+
+                for (int i = 0; i < wsOriginal.size(); i++)
+                    ws._weights[i] = std::tuple<float, float, float>(wsOriginal[i], 0.0f, 0.0f);
 
                 network._weightSets.push_back(ws);
             }
 
             // From hidden state
             if (_pHierarchy->getLayer(_caret._layer).getVisibleLayerDesc(v)._predict) {
-                {
-                    WeightSet ws;
+                WeightSet ws;
 
-                    ws._name = "p_h_" + std::to_string(v);
+                ws._name = "p_h_" + std::to_string(v);
 
-                    ws._weights = _pHierarchy->getLayer(_caret._layer).getFeedBackWeights(v, 0, caretX, caretY);
+                std::vector<float> wsOriginal = _pHierarchy->getLayer(_caret._layer).getFeedBackWeights(v, 0, caretX, caretY);
 
-                    ws._radius = (std::sqrt(ws._weights.size()) - 1) / 2;
+                ws._weights.resize(wsOriginal.size());
 
-                    network._weightSets.push_back(ws);
-                }
+                for (int i = 0; i < wsOriginal.size(); i++)
+                    ws._weights[i] = std::tuple<float, float, float>(wsOriginal[i], 0.0f, 0.0f);
 
-                // From feed back
-                if (_caret._layer < _pHierarchy->getNumLayers() - 1) {
-                    WeightSet ws;
+                ws._radius = (std::sqrt(ws._weights.size()) - 1) / 2;
 
-                    ws._name = "p_fb_" + std::to_string(v);
-
-                    ws._weights = _pHierarchy->getLayer(_caret._layer).getFeedBackWeights(v, 1, caretX, caretY);
-
-                    ws._radius = (std::sqrt(ws._weights.size()) - 1) / 2;
-
-                    network._weightSets.push_back(ws);
-                }
+                network._weightSets.push_back(ws);
             }
         }
 

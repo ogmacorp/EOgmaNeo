@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -245,12 +245,8 @@ void Hierarchy::step(const std::vector<std::vector<int>> &inputs, ComputeSystem 
 
             if (l < _layers.size() - 1)
                 feedBack = _layers[l + 1]._predictions[_ticksPerUpdate[l + 1] - 1 - _ticks[l + 1]];
-            else {
-                if (!topFeedBack.empty())
-                    feedBack = topFeedBack;
-                else
-                    feedBack = _layers[l]._hiddenStates;
-            }
+            else
+                feedBack = topFeedBack;
 
             _layers[l].backward(feedBack, cs, learn ? _betas[l] : 0.0f);
         }

@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -17,10 +17,6 @@ using namespace eogmaneo;
 
 float eogmaneo::sigmoid(float x) {
     return 1.0f / (1.0f + std::exp(-x));
-}
-
-float eogmaneo::safeLog(float x) {
-    return std::log(std::max(0.00001f, x));
 }
 
 void ForwardWorkItem::run(size_t threadIndex) {
@@ -226,7 +222,9 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
     // Extract input views
     std::vector<float> chunkActivations(visibleChunkSize * visibleChunkSize, 0.0f);
-
+    std::vector<float> chunkActivationsPrev(chunkActivations.size(), 0.0f);
+    float chunkDivPrev = 0.0f;
+    
     int spatialHiddenRadius = _pLayer->_visibleLayerDescs[v]._backwardRadius;
 
     int spatialHiddenDiam = spatialHiddenRadius * 2 + 1;
@@ -248,7 +246,6 @@ void BackwardWorkItem::run(size_t threadIndex) {
     int upperHiddenX = hiddenCenterX + spatialHiddenRadius;
     int upperHiddenY = hiddenCenterY + spatialHiddenRadius;
 
-    // For each feedback layer
     for (int dcx = -spatialChunkRadius; dcx <= spatialChunkRadius; dcx++)
         for (int dcy = -spatialChunkRadius; dcy <= spatialChunkRadius; dcy++) {
             int cx = hiddenChunkCenterX + dcx;
@@ -258,30 +255,62 @@ void BackwardWorkItem::run(size_t threadIndex) {
                 int hiddenChunkIndex = cx + cy * hiddenChunksInX;
 
                 int maxIndex = _pLayer->_hiddenStates[hiddenChunkIndex];
-                int feedBackIndex = _pLayer->_feedBack[hiddenChunkIndex];
-
+                int maxIndexPrev = _pLayer->_hiddenStatesPrev[hiddenChunkIndex];
+                
                 int mdx = maxIndex % hiddenChunkSize;
                 int mdy = maxIndex / hiddenChunkSize;
 
                 int hx = cx * hiddenChunkSize + mdx;
                 int hy = cy * hiddenChunkSize + mdy;
 
-                int fdx = feedBackIndex % hiddenChunkSize;
-                int fdy = feedBackIndex / hiddenChunkSize;
+                int mdxPrev = maxIndexPrev % hiddenChunkSize;
+                int mdyPrev = maxIndexPrev / hiddenChunkSize;
 
-                int fx = cx * hiddenChunkSize + fdx;
-                int fy = cy * hiddenChunkSize + fdy;
+                int hxPrev = cx * hiddenChunkSize + mdxPrev;
+                int hyPrev = cy * hiddenChunkSize + mdyPrev;
 
-                if (fx >= lowerHiddenX && fx <= upperHiddenX && fy >= lowerHiddenY && fy <= upperHiddenY) {
-                    int wi = (fx - lowerHiddenX) + (fy - lowerHiddenY) * spatialHiddenDiam;
+                if (!_pLayer->_feedBack.empty()) {
+                    int feedBackIndex = _pLayer->_feedBack[hiddenChunkIndex];
+                    int feedBackIndexPrev = _pLayer->_hiddenStates[hiddenChunkIndex]; // Replace with hidden states
 
-                    for (int c = 0; c < chunkActivations.size(); c++) {
-                        int dvx = c % visibleChunkSize;
-                        int dvy = c / visibleChunkSize;
+                    int fdx = feedBackIndex % hiddenChunkSize;
+                    int fdy = feedBackIndex / hiddenChunkSize;
 
-                        int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
-    
-                        chunkActivations[c] += safeLog(_pLayer->_feedBackWeights[v][ivIndex][wi].first) - safeLog(1.0f - _pLayer->_feedBackWeights[v][ivIndex][wi].first);
+                    int fx = cx * hiddenChunkSize + fdx;
+                    int fy = cy * hiddenChunkSize + fdy;
+
+                    int fdxPrev = feedBackIndexPrev % hiddenChunkSize;
+                    int fdyPrev = feedBackIndexPrev / hiddenChunkSize;
+
+                    int fxPrev = cx * hiddenChunkSize + fdxPrev;
+                    int fyPrev = cy * hiddenChunkSize + fdyPrev;
+
+                    if (fx >= lowerHiddenX && fx <= upperHiddenX && fy >= lowerHiddenY && fy <= upperHiddenY) {
+                        int wi = (fx - lowerHiddenX) + (fy - lowerHiddenY) * spatialHiddenDiam;
+
+                        for (int c = 0; c < chunkActivations.size(); c++) {
+                            int dvx = c % visibleChunkSize;
+                            int dvy = c / visibleChunkSize;
+
+                            int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
+        
+                            chunkActivations[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].first;
+                        }
+                    }
+
+                    if (fxPrev >= lowerHiddenX && fxPrev <= upperHiddenX && fyPrev >= lowerHiddenY && fyPrev <= upperHiddenY) {
+                        int wi = (fxPrev - lowerHiddenX) + (fyPrev - lowerHiddenY) * spatialHiddenDiam;
+
+                        for (int c = 0; c < chunkActivations.size(); c++) {
+                            int dvx = c % visibleChunkSize;
+                            int dvy = c / visibleChunkSize;
+
+                            int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
+        
+                            chunkActivationsPrev[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].first;
+                        }
+
+                        chunkDivPrev += 1.0f;
                     }
                 }
 
@@ -294,8 +323,23 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
                         int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
 
-                        chunkActivations[c] += safeLog(_pLayer->_feedBackWeights[v][ivIndex][wi].second) - safeLog(1.0f - _pLayer->_feedBackWeights[v][ivIndex][wi].second);
+                        chunkActivations[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].second;
                     }
+                }
+
+                if (hxPrev >= lowerHiddenX && hxPrev <= upperHiddenX && hyPrev >= lowerHiddenY && hyPrev <= upperHiddenY) {
+                    int wi = (hxPrev - lowerHiddenX) + (hyPrev - lowerHiddenY) * spatialHiddenDiam;
+                    
+                    for (int c = 0; c < chunkActivations.size(); c++) {
+                        int dvx = c % visibleChunkSize;
+                        int dvy = c / visibleChunkSize;
+
+                        int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
+
+                        chunkActivationsPrev[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].second;
+                    }
+
+                    chunkDivPrev += 1.0f;
                 }
             }
         }
@@ -309,21 +353,15 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
     int predIndex = 0;
 
-    for (int c = 0; c < chunkActivations.size(); c++) {
-        int dvx = c % visibleChunkSize;
-        int dvy = c / visibleChunkSize;
-
-        int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
-
-        chunkActivations[c] += _pLayer->_visibleSums[v][ivIndex];
-
+    for (int c = 1; c < chunkActivations.size(); c++) {
         if (chunkActivations[c] > chunkActivations[predIndex])
             predIndex = c;
     }
 
     _pLayer->_predictions[v][_visibleChunkIndex] = predIndex;
 
-    float weightSum = 0.0f;
+    for (int c = 0; c < chunkActivationsPrev.size(); c++)
+        chunkActivationsPrev[c] = sigmoid(chunkActivationsPrev[c] / std::max(1.0f, chunkDivPrev));
 
     for (int dcx = -spatialChunkRadius; dcx <= spatialChunkRadius; dcx++)
         for (int dcy = -spatialChunkRadius; dcy <= spatialChunkRadius; dcy++) {
@@ -333,32 +371,55 @@ void BackwardWorkItem::run(size_t threadIndex) {
             if (cx >= 0 && cx < hiddenChunksInX && cy >= 0 && cy < hiddenChunksInY) {
                 int hiddenChunkIndex = cx + cy * hiddenChunksInX;
 
-                int feedBackIndexPrev = _pLayer->_feedBackPrev[hiddenChunkIndex];
                 int maxIndexPrev = _pLayer->_hiddenStatesPrev[hiddenChunkIndex];
 
-                for (int dhx = 0; dhx < hiddenChunkSize; dhx++)
-                    for (int dhy = 0; dhy < hiddenChunkSize; dhy++) {
-                        int index = dhx + dhy * hiddenChunkSize;
+                int mdxPrev = maxIndexPrev % hiddenChunkSize;
+                int mdyPrev = maxIndexPrev / hiddenChunkSize;
 
-                        int ohx = cx * hiddenChunkSize + dhx;
-                        int ohy = cy * hiddenChunkSize + dhy;
+                int hxPrev = cx * hiddenChunkSize + mdxPrev;
+                int hyPrev = cy * hiddenChunkSize + mdyPrev;
 
-                        if (ohx >= lowerHiddenX && ohx <= upperHiddenX && ohy >= lowerHiddenY && ohy <= upperHiddenY) {
-                            int wi = (ohx - lowerHiddenX) + (ohy - lowerHiddenY) * spatialHiddenDiam;
+                if (!_pLayer->_feedBack.empty()) {
+                    int feedBackIndexPrev = _pLayer->_hiddenStates[hiddenChunkIndex]; // Replace with hidden states
+                
+                    int fdxPrev = feedBackIndexPrev % hiddenChunkSize;
+                    int fdyPrev = feedBackIndexPrev / hiddenChunkSize;
 
-                            float target0 = index == feedBackIndexPrev ? 1.0f : 0.0f;
-                            float target1 = index == maxIndexPrev ? 1.0f : 0.0f;
+                    int fxPrev = cx * hiddenChunkSize + fdxPrev;
+                    int fyPrev = cy * hiddenChunkSize + fdyPrev;
 
-                            _pLayer->_feedBackWeights[v][ivIndexTarget][wi].first += _pLayer->_beta * (target0 - _pLayer->_feedBackWeights[v][ivIndexTarget][wi].first);
-                            _pLayer->_feedBackWeights[v][ivIndexTarget][wi].second += _pLayer->_beta * (target1 - _pLayer->_feedBackWeights[v][ivIndexTarget][wi].second);
+                    if (fxPrev >= lowerHiddenX && fxPrev <= upperHiddenX && fyPrev >= lowerHiddenY && fyPrev <= upperHiddenY) {
+                        int wi = (fxPrev - lowerHiddenX) + (fyPrev - lowerHiddenY) * spatialHiddenDiam;
 
-                            weightSum += safeLog(1.0f - _pLayer->_feedBackWeights[v][ivIndexTarget][wi].first) + safeLog(1.0f - _pLayer->_feedBackWeights[v][ivIndexTarget][wi].second);
+                        for (int c = 0; c < chunkActivations.size(); c++) {
+                            int dvx = c % visibleChunkSize;
+                            int dvy = c / visibleChunkSize;
+
+                            int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
+        
+                            float target = (c == targetIndex ? 1.0f : 0.0f);
+
+                            _pLayer->_feedBackWeights[v][ivIndex][wi].first += _pLayer->_beta * (target - chunkActivationsPrev[c]);
                         }
                     }
+                }
+                
+                if (hxPrev >= lowerHiddenX && hxPrev <= upperHiddenX && hyPrev >= lowerHiddenY && hyPrev <= upperHiddenY) {
+                    int wi = (hxPrev - lowerHiddenX) + (hyPrev - lowerHiddenY) * spatialHiddenDiam;
+                    
+                    for (int c = 0; c < chunkActivations.size(); c++) {
+                        int dvx = c % visibleChunkSize;
+                        int dvy = c / visibleChunkSize;
+
+                        int ivIndex = (visibleChunkX * visibleChunkSize + dvx) + (visibleChunkY * visibleChunkSize + dvy) * visibleWidth;
+
+                        float target = (c == targetIndex ? 1.0f : 0.0f);
+                        
+                        _pLayer->_feedBackWeights[v][ivIndex][wi].second += _pLayer->_beta * (target - chunkActivationsPrev[c]);
+                    }
+                }
             }
         }
-
-    _pLayer->_visibleSums[v][ivIndexTarget] = weightSum;
 }
 
 void Layer::create(int hiddenWidth, int hiddenHeight, int chunkSize, const std::vector<VisibleLayerDesc> &visibleLayerDescs, unsigned long seed) {
@@ -373,18 +434,16 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int chunkSize, const std::
     _feedForwardWeights.resize(hiddenWidth * hiddenHeight * visibleLayerDescs.size());
     
     _inputs.resize(visibleLayerDescs.size());
-    _visibleSums.resize(visibleLayerDescs.size());
 
     int hiddenChunksInX = hiddenWidth / chunkSize;
     int hiddenChunksInY = hiddenHeight / chunkSize;
 
     _hiddenStates.resize(hiddenChunksInX * hiddenChunksInY, 0);
 
-    std::uniform_real_distribution<float> initWeightDist(0.01f, 0.1f);
+    std::uniform_real_distribution<float> initWeightDist(-0.1f, 0.1f);
 
     for (int v = 0; v < visibleLayerDescs.size(); v++) {
         _inputs[v].resize((_visibleLayerDescs[v]._width / _visibleLayerDescs[v]._chunkSize) * (_visibleLayerDescs[v]._height / _visibleLayerDescs[v]._chunkSize), 0);
-        _visibleSums[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height, -9999.0f);
 
         int forwardVecSize = _visibleLayerDescs[v]._forwardRadius * 2 + 1;
 
@@ -461,8 +520,6 @@ void Layer::createFromStream(std::istream &s) {
 
     _predictions.resize(_visibleLayerDescs.size());
 
-    _visibleSums.resize(_visibleLayerDescs.size());
-
     int hiddenChunksInX = _hiddenWidth / _chunkSize;
     int hiddenChunksInY = _hiddenHeight / _chunkSize;
 
@@ -484,14 +541,9 @@ void Layer::createFromStream(std::istream &s) {
         _inputsPrev[v].resize(_inputs[v].size());
         _predictions[v].resize(_inputs[v].size());
 
-        _visibleSums[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height);
-
         // Load
         for (int i = 0; i < _inputs[v].size(); i++)
             s >> _inputs[v][i] >> _inputsPrev[v][i] >> _predictions[v][i];
-
-        for (int i = 0; i < _visibleSums[v].size(); i++)
-            s >> _visibleSums[v][i];
 
         int forwardVecSize = _visibleLayerDescs[v]._forwardRadius * 2 + 1;
 
@@ -565,11 +617,6 @@ void Layer::writeToStream(std::ostream &s) {
         // Save
         for (int i = 0; i < _predictions[v].size(); i++)
             s << _inputs[v][i] << " " << _inputsPrev[v][i] << " " << _predictions[v][i] << " ";
-
-        s << std::endl;
-
-        for (int i = 0; i < _visibleSums[v].size(); i++)
-            s << _visibleSums[v][i] << " ";
 
         s << std::endl;
 

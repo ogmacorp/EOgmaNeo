@@ -1,3 +1,8 @@
+1.2.5 January, 2018
+===================
+
+- Hierarchy performance improvements
+
 1.2.4 January, 2018
 ===================
 
