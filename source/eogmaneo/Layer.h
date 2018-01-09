@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -20,7 +20,6 @@ namespace eogmaneo {
     \brief Sigmoid function.
     */
     float sigmoid(float x);
-    float safeLog(float x);
 
     /*!
     \brief Forward work item, for internal use only.
@@ -123,7 +122,6 @@ namespace eogmaneo {
         std::vector<VisibleLayerDesc> _visibleLayerDescs;
 
         std::vector<std::vector<int>> _predictions;
-        std::vector<std::vector<float>> _visibleSums;
         
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;

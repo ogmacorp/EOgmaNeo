@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -34,7 +34,7 @@ namespace eogmaneo {
     struct WeightSet {
         std::string _name;
         sf::Uint16 _radius;
-        std::vector<float> _weights;
+        std::vector<std::tuple<float, float, float>> _weights;
     };
 
     sf::Packet &operator << (sf::Packet &packet, const WeightSet &weightSet);
