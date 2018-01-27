@@ -90,7 +90,7 @@ public class sineWaveExample {
         // Recall
         System.out.println("Predicting values...");
         for (int t = 0; t < 100; t++) {
-            StdVeci predSDR = h.getPrediction(0); // First (only in this case) input layer prediction
+            StdVeci predSDR = h.getPredictions(0); // First (only in this case) input layer prediction
 
             // Decode value
             double value = (double)predSDR.get(0) / (unitsPerChunk - 1) * (bounds[1] - bounds[0]) + bounds[0];

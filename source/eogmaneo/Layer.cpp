@@ -94,9 +94,9 @@ void ForwardWorkItem::run(size_t threadIndex) {
                                 
                                 float target = index == maxIndexPrev ? 1.0f : 0.0f;
 
-                                float recon = _pLayer->_reconActivationsPrev[v][vIndex] / std::max(1.0f, _pLayer->_reconCountsPrev[v][vIndex]);
+                                float recon = std::tanh(_pLayer->_reconActivationsPrev[v][vIndex]);
 
-                                _pLayer->_feedForwardWeights[iPrev][wi] += _pLayer->_alpha * (target - sigmoid(recon));
+                                _pLayer->_feedForwardWeights[iPrev][wi] += _pLayer->_alpha * (target - recon);
                             }
                         }
 
@@ -191,7 +191,6 @@ void ForwardWorkItem::run(size_t threadIndex) {
 
                                 // Reconstruction
                                 _pLayer->_reconActivations[v][vIndex] += _pLayer->_feedForwardWeights[i][wi];
-                                _pLayer->_reconCounts[v][vIndex] += 1.0f;
                             }
                         }
                 }
@@ -223,8 +222,7 @@ void BackwardWorkItem::run(size_t threadIndex) {
     // Extract input views
     std::vector<float> chunkActivations(visibleChunkSize * visibleChunkSize, 0.0f);
     std::vector<float> chunkActivationsPrev(chunkActivations.size(), 0.0f);
-    float chunkDivPrev = 0.0f;
-    
+
     int spatialHiddenRadius = _pLayer->_visibleLayerDescs[v]._backwardRadius;
 
     int spatialHiddenDiam = spatialHiddenRadius * 2 + 1;
@@ -271,7 +269,7 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
                 if (!_pLayer->_feedBack.empty()) {
                     int feedBackIndex = _pLayer->_feedBack[hiddenChunkIndex];
-                    int feedBackIndexPrev = _pLayer->_hiddenStates[hiddenChunkIndex]; // Replace with hidden states
+                    int feedBackIndexPrev = _pLayer->_feedBackPrev[hiddenChunkIndex];
 
                     int fdx = feedBackIndex % hiddenChunkSize;
                     int fdy = feedBackIndex / hiddenChunkSize;
@@ -309,8 +307,6 @@ void BackwardWorkItem::run(size_t threadIndex) {
         
                             chunkActivationsPrev[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].first;
                         }
-
-                        chunkDivPrev += 1.0f;
                     }
                 }
 
@@ -338,8 +334,6 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
                         chunkActivationsPrev[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].second;
                     }
-
-                    chunkDivPrev += 1.0f;
                 }
             }
         }
@@ -361,7 +355,7 @@ void BackwardWorkItem::run(size_t threadIndex) {
     _pLayer->_predictions[v][_visibleChunkIndex] = predIndex;
 
     for (int c = 0; c < chunkActivationsPrev.size(); c++)
-        chunkActivationsPrev[c] = sigmoid(chunkActivationsPrev[c] / std::max(1.0f, chunkDivPrev));
+        chunkActivationsPrev[c] = sigmoid(chunkActivationsPrev[c]);
 
     for (int dcx = -spatialChunkRadius; dcx <= spatialChunkRadius; dcx++)
         for (int dcy = -spatialChunkRadius; dcy <= spatialChunkRadius; dcy++) {
@@ -380,7 +374,7 @@ void BackwardWorkItem::run(size_t threadIndex) {
                 int hyPrev = cy * hiddenChunkSize + mdyPrev;
 
                 if (!_pLayer->_feedBack.empty()) {
-                    int feedBackIndexPrev = _pLayer->_hiddenStates[hiddenChunkIndex]; // Replace with hidden states
+                    int feedBackIndexPrev = _pLayer->_feedBackPrev[hiddenChunkIndex];
                 
                     int fdxPrev = feedBackIndexPrev % hiddenChunkSize;
                     int fdyPrev = feedBackIndexPrev / hiddenChunkSize;
@@ -670,7 +664,6 @@ void Layer::forward(const std::vector<std::vector<int>> &inputs, ComputeSystem &
     int numChunks = chunksInX * chunksInY;
 
     _reconActivationsPrev = _reconActivations;
-    _reconCountsPrev = _reconCounts;
 
     // Clear recon buffers
     _reconActivations.clear();
@@ -679,12 +672,8 @@ void Layer::forward(const std::vector<std::vector<int>> &inputs, ComputeSystem &
     for (int v = 0; v < _visibleLayerDescs.size(); v++)
         _reconActivations[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height, 0.0f);
 
-    _reconCounts = _reconActivations;
-
-    if (_reconActivationsPrev.empty()) {
+    if (_reconActivationsPrev.empty())
         _reconActivationsPrev = _reconActivations;
-        _reconCountsPrev = _reconCounts;
-    }
 
     std::uniform_int_distribution<int> seedDist(0, 99999);
 

@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -42,7 +42,7 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
     _radius = radius;
 
-    std::uniform_real_distribution<float> weightDist(0.9f, 1.0f);
+    std::normal_distribution<float> weightDist(1.0f, 1.01f);
 
     int diam = radius * 2 + 1;
 
@@ -50,17 +50,16 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
 	int units = hiddenWidth * hiddenHeight;
 
-    _weights.resize(hiddenWidth * hiddenHeight * weightsPerUnit);
+    _weights.resize(units * weightsPerUnit);
 
-    for (int w = 0; w < _weights.size(); w++)
+    for (int w = 0; w < _weights.size(); w++) {
         _weights[w] = weightDist(rng);
+    }
 
 	int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 
     _hiddenStates.resize(chunksInX * chunksInY, 0);
-
-    _hiddenActivations.resize(hiddenWidth * hiddenHeight, 0.0f);
 }
 
 const std::vector<int> &ImageEncoder::activate(const std::vector<float> &input, ComputeSystem &cs) {
@@ -73,14 +72,14 @@ const std::vector<int> &ImageEncoder::activate(const std::vector<float> &input, 
         for (int cy = 0; cy < chunksInY; cy++) {
             std::shared_ptr<ImageEncoderWorkItem> item = std::make_shared<ImageEncoderWorkItem>();
 
-			item->_cx = cx;
-			item->_cy = cy;
-			item->_pEncoder = this;
+            item->_cx = cx;
+            item->_cy = cy;
+            item->_pEncoder = this;
 
-			cs._pool.addItem(item);
+            cs._pool.addItem(item);
         }
-		
-	cs._pool.wait();
+        
+    cs._pool.wait();
 
     return _hiddenStates;
 }
@@ -112,48 +111,29 @@ const std::vector<float> &ImageEncoder::reconstruct(const std::vector<int> &hidd
 	
 	// Rescale
 	for (int i = 0; i < _recon.size(); i++)
-		_recon[i] = sigmoid(_recon[i] / std::max(0.0001f, _count[i]));
+        _recon[i] = sigmoid(_recon[i] / std::max(0.0001f, _count[i]));
+        //_recon[i] /= std::max(0.0001f, _count[i]);
 
     return _recon;
 }
 
-void ImageEncoder::addSample(const std::vector<float> &input, int maxSamples) {
-    _samples.insert(_samples.begin(), input);
-
-    if (_samples.size() > maxSamples)
-        _samples.resize(maxSamples);
-}
-
-void ImageEncoder::learn(float alpha, ComputeSystem &cs, int iter) {
-    if (_samples.empty())
-        return;
-
-    std::uniform_int_distribution<int> sampleDist(0, _samples.size() - 1);
-
+void ImageEncoder::learn(float alpha, ComputeSystem &cs) {
     int chunksInX = _hiddenWidth / _chunkSize;
     int chunksInY = _hiddenHeight / _chunkSize;
 
-    for (int i = 0; i < iter; i++) {
-        int index = sampleDist(cs._rng);
+    for (int cx = 0; cx < chunksInX; cx++)
+        for (int cy = 0; cy < chunksInY; cy++) {
+            std::shared_ptr<ImageLearnWorkItem> item = std::make_shared<ImageLearnWorkItem>();
 
-        activate(_samples[index], cs);
+            item->_cx = cx;
+            item->_cy = cy;
+            item->_pEncoder = this;
+            item->_alpha = alpha;
 
-        reconstruct(_hiddenStates, cs);
+            cs._pool.addItem(item);
+        }
 
-        for (int cx = 0; cx < chunksInX; cx++)
-            for (int cy = 0; cy < chunksInY; cy++) {
-                std::shared_ptr<ImageLearnWorkItem> item = std::make_shared<ImageLearnWorkItem>();
-
-                item->_cx = cx;
-                item->_cy = cy;
-                item->_pEncoder = this;
-                item->_alpha = alpha;
-
-                cs._pool.addItem(item);
-            }
-
-        cs._pool.wait();
-    }
+    cs._pool.wait();
 }
 
 void ImageEncoder::activate(int cx, int cy) {
@@ -175,6 +155,8 @@ void ImageEncoder::activate(int cx, int cy) {
 
     int lowerX = centerX - _radius;
     int lowerY = centerY - _radius;
+
+    int ci = cx + cy * chunksInX;
 
     for (int dx = 0; dx < _chunkSize; dx++)
         for (int dy = 0; dy < _chunkSize; dy++) {
@@ -198,8 +180,6 @@ void ImageEncoder::activate(int cx, int cy) {
                         value += _input[ii] * _weights[wi];
                     }
                 }
-
-            _hiddenActivations[x + y * _hiddenWidth] = value;
 
             if (value > maxValue) {
                 maxValue = value;
@@ -246,7 +226,7 @@ void ImageEncoder::reconstruct(int cx, int cy) {
 
 				if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
 					_recon[vx + vy * _inputWidth] += _weights[index + weightsPerUnit * (x + y * _hiddenWidth)];
-					_count[vx + vy * _inputWidth] += 2.0f;
+					_count[vx + vy * _inputWidth] += 1.0f;
 				}
 			}
 	}
@@ -269,8 +249,10 @@ void ImageEncoder::learn(int cx, int cy, float alpha) {
     int lowerX = centerX - _radius;
     int lowerY = centerY - _radius;
 
-    int winX = _hiddenStates[cx + cy * chunksInX] % _chunkSize;
-    int winY = _hiddenStates[cx + cy * chunksInX] / _chunkSize;
+    int ci = cx + cy * chunksInX;
+
+    int winX = _hiddenStates[ci] % _chunkSize;
+    int winY = _hiddenStates[ci] / _chunkSize;
 
     int x = cx * _chunkSize + winX;
     int y = cy * _chunkSize + winY;
@@ -284,7 +266,7 @@ void ImageEncoder::learn(int cx, int cy, float alpha) {
             int vy = lowerY + sy;
 
             if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight)
-                _weights[index + weightsPerUnit * (x + y * _hiddenWidth)] += alpha * std::min(0.0f, (_input[vx + vy * _inputWidth] - _recon[vx + vy * _inputWidth]));
+                _weights[index + weightsPerUnit * (x + y * _hiddenWidth)] += alpha * (_input[vx + vy * _inputWidth] - _recon[vx + vy * _inputWidth]);
         }
 }
 
@@ -311,7 +293,7 @@ bool ImageEncoder::load(const std::string &fileName) {
 
 	int units = _hiddenWidth * _hiddenHeight;
 
-    _weights.resize(_hiddenWidth * _hiddenHeight * weightsPerUnit);
+    _weights.resize(units * weightsPerUnit);
 
     for (int w = 0; w < _weights.size(); w++)
         s >> _weights[w];
@@ -320,8 +302,6 @@ bool ImageEncoder::load(const std::string &fileName) {
     int chunksInY = _hiddenHeight / _chunkSize;
 
     _hiddenStates.resize(chunksInX * chunksInY, 0);
-
-    _hiddenActivations.resize(_hiddenWidth * _hiddenHeight, 0.0f);
 
     return true;
 }
