@@ -49,7 +49,7 @@ for t in range(5000):
 
 # Recall
 for t in range(100):
-    predSDR = h.getPrediction(0) # First (only in this case) input layer prediction
+    predSDR = h.getPredictions(0) # First (only in this case) input layer prediction
 
     # Decode value
     value = predSDR[0] / float(unitsPerChunk - 1) * (bounds[1] - bounds[0]) + bounds[0]

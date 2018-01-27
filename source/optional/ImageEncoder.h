@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -57,6 +57,7 @@ namespace eogmaneo {
         int _cx, _cy;
 
         float _alpha;
+        float _beta;
 
         ImageLearnWorkItem()
             : _pEncoder(nullptr)
@@ -77,10 +78,8 @@ namespace eogmaneo {
 
         std::vector<int> _hiddenStates;
 
-        std::vector<float> _hiddenActivations;
-
         std::vector<float> _weights;
-		
+
 		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);
         void learn(int cx, int cy, float alpha);
@@ -89,8 +88,6 @@ namespace eogmaneo {
 		std::vector<float> _input;
 		std::vector<float> _recon;
 		std::vector<float> _count;
-
-        std::vector<std::vector<float>> _samples;
 		
     public:
         /*!
@@ -105,16 +102,6 @@ namespace eogmaneo {
         */
         void create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int chunkSize, int radius,
             unsigned long seed);
-
-        /*!
-        \brief Zero the hidden states.
-        */
-        void clearHiddenStates() {
-            int size = _hiddenStates.size();
-
-            _hiddenStates.clear();
-            _hiddenStates.assign(size, 0);
-        }
 
         /*!
         \brief Activate the encoder from an input (compute hidden states, perform encoding).
@@ -132,17 +119,12 @@ namespace eogmaneo {
         const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs);
 
         /*!
-        \brief Add a training sample.
-        */
-        void addSample(const std::vector<float> &input, int maxSamples = 100);
-
-        /*!
         \brief Experimental learning functionality.
         Requires that reconstruct(...) has been called, without another call to activate(...).
         \param alpha weight learning rate.
         \param cs compute system to be used.
         */
-        void learn(float alpha, ComputeSystem &cs, int iter = 5);
+        void learn(float alpha, ComputeSystem &cs);
 
         /*!
         \brief Save to a file.

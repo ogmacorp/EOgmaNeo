@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -25,7 +25,7 @@ void SobelYWorkItem::run(size_t threadIndex) {
 }
 
 void SobelCombineWorkItem::run(size_t threadIndex) {
-    sobelCombine(*_psrcX, *_psrcY, *_pdest, _width, _clip, _cx, _cy, _chunkSize);
+    sobelCombine(*_psrcX, *_psrcY, *_pdest, _width, _cx, _cy, _chunkSize);
 }
 
 std::vector<float> eogmaneo::whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &cs, int chunkSize) {
@@ -113,7 +113,7 @@ void eogmaneo::whiten(const std::vector<float> &src, std::vector<float> &dest, i
         }
 }
 
-std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &cs, int chunkSize) {
+std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, ComputeSystem &cs, int chunkSize) {
     std::vector<float> destX(src.size(), 0.0f);
     std::vector<float> destY(src.size(), 0.0f);
     std::vector<float> dest(src.size(), 0.0f);
@@ -166,7 +166,6 @@ std::vector<float> eogmaneo::sobel(const std::vector<float> &src, int width, flo
             item->_psrcY = &destY;
             item->_pdest = &dest;
             item->_width = width;
-            item->_clip = clip;
             item->_chunkSize = chunkSize;
 
             cs._pool.addItem(item);
@@ -243,7 +242,7 @@ void eogmaneo::sobelY(const std::vector<float> &src, std::vector<float> &dest, i
         }
 }
 
-void eogmaneo::sobelCombine(const std::vector<float> &srcX, const std::vector<float> &srcY, std::vector<float> &dest, int width, float clip, int cx, int cy, int chunkSize) {
+void eogmaneo::sobelCombine(const std::vector<float> &srcX, const std::vector<float> &srcY, std::vector<float> &dest, int width, int cx, int cy, int chunkSize) {
     int height = srcX.size() / width;
 
     for (int sx = 0; sx < chunkSize; sx++)
@@ -254,7 +253,7 @@ void eogmaneo::sobelCombine(const std::vector<float> &srcX, const std::vector<fl
             if (x >= 0 && y >= 0 && x < width && y < height) {
                 float output = std::sqrt(srcX[x + y * width] * srcX[x + y * width] + srcY[x + y * width] * srcY[x + y * width]);
 
-                dest[x + y * width] = std::max(0.0f, output * (1.0f + clip) - clip);
+                dest[x + y * width] = output;
             }
         }
 }

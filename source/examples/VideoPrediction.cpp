@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -48,7 +48,7 @@ const int hiddenHeight = 32;
 const int chunkSize = 4;
 const int radius = 9;
 
-static ComputeSystem *cs;
+static std::shared_ptr<ComputeSystem> cs;
 static ImageEncoder imagePreEncoder;
 static Hierarchy h;
 
@@ -67,7 +67,7 @@ void ConstructEOgmaNeoHierarchy() {
     std::cout << "Using " << nthreads << " workers" << std::endl;
     std::cout << std::endl;
 
-    cs = new ComputeSystem(nthreads);
+    cs = std::make_shared<ComputeSystem>(nthreads);
 
     imagePreEncoder.create(imageWidth, imageHeight, hiddenWidth, hiddenHeight, chunkSize, 16, 123);
 
@@ -87,7 +87,7 @@ void ConstructEOgmaNeoHierarchy() {
         ld._ticksPerUpdate = 2;
         ld._temporalHorizon = 2;
 
-        ld._alpha = 0.5f;
+        ld._alpha = 0.1f;
         ld._beta = 0.1f;
 
         lds.push_back(ld);
@@ -132,8 +132,8 @@ int main() {
 #endif
 
     std::string hierarchyFileName("Hierarchy.eohr");
-    std::string videoFileName("Clock-OneArm.mp4");
-    //std::string videoFileName("Tesseract.mp4");
+    //std::string videoFileName("Clock-OneArm.mp4");
+    std::string videoFileName("Tesseract.mp4");
 
     cv::VideoCapture capture(videoFileName);
     cv::Mat frame;
@@ -200,6 +200,10 @@ int main() {
     // Increase number of presentations for the one-arm clock video
     if (videoFileName == "Clock-OneArm.mp4") {
         numPreEncoderIters *= 4;
+    }
+    else
+    if (videoFileName == "Tesseract.mp4") {
+        numPreEncoderIters /= 4;
     }
 
 
@@ -300,8 +304,7 @@ int main() {
             inputs.push_back(imagePreEncoder.activate(input, *cs));
 
             std::vector<float> output = imagePreEncoder.reconstruct(inputs[0], *cs);
-            imagePreEncoder.addSample(input);
-            imagePreEncoder.learn(0.5f, *cs);
+            imagePreEncoder.learn(0.95f, *cs);
 
             st = "Source";
             t.setString(st);
@@ -494,7 +497,7 @@ int main() {
 
             // Grab the prediction (t+1) sparse chunked representation
             std::vector<int> pred;
-            pred = h.getPrediction(0);
+            pred = h.getPredictions(0);
 
             // Decode the prediction to an image using the pre-encoder
             std::vector<float> output;
@@ -579,7 +582,7 @@ int main() {
     currentFrame = 0;
 
     std::vector<int> pred;
-    pred = h.getPrediction(0);
+    pred = h.getPredictions(0);
 
     do {
         sf::Event windowEvent;
@@ -605,11 +608,11 @@ int main() {
         window.clear();
 
         std::vector<std::vector<int>> inputs;
-        inputs.push_back(h.getPrediction(0));
+        inputs.push_back(h.getPredictions(0));
 
         h.step(inputs, *cs, false);
 
-        pred = h.getPrediction(0);
+        pred = h.getPredictions(0);
 
         // Use the prediction to reconstruct the next image (output array)
         std::vector<float> output;
