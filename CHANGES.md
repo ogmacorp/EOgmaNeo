@@ -1,3 +1,9 @@
+1.2.6 January, 2018
+===================
+
+- Layer reconstruction improvements
+- ImageEncoder changes
+
 1.2.5 January, 2018
 ===================
 

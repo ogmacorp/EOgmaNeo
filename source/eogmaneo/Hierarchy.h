@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -65,7 +65,7 @@ namespace eogmaneo {
 			: _width(24), _height(24), _chunkSize(6),
 			_forwardRadius(9), _backwardRadius(9),
 			_ticksPerUpdate(2), _temporalHorizon(2),
-			_alpha(0.01f), _beta(0.01f)
+			_alpha(0.1f), _beta(0.1f)
 		{}
 	};
 
@@ -132,7 +132,7 @@ namespace eogmaneo {
         \brief Get the predicted version of the input.
         \param i the index of the input to retrieve.
         */
-        const std::vector<int> &getPrediction(int i) const {
+        const std::vector<int> &getPredictions(int i) const {
             int index = i * _inputTemporalHorizon;
 
             return _layers.front()._predictions[index];

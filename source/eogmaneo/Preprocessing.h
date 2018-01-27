@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -81,7 +81,6 @@ namespace eogmaneo {
 
         int _cx, _cy;
         int _width;
-        float _clip;
         int _chunkSize;
 
         SobelCombineWorkItem()
@@ -108,13 +107,12 @@ namespace eogmaneo {
     \brief Sobel filter (edge detect) an image, stored in a raveled vector.
     \param src source image.
     \param width width of the image.
-    \param clip used to rescale results into [clip, 1] range (with clamping).
     \param cs compute system to be used.
     \param chunkSize diameter of a chunk of computation (for performance only, unlike for the main portion of this library).
     */
-    std::vector<float> sobel(const std::vector<float> &src, int width, float clip, ComputeSystem &cs, int chunkSize);
+    std::vector<float> sobel(const std::vector<float> &src, int width, ComputeSystem &cs, int chunkSize);
     
     void sobelX(const std::vector<float> &src, std::vector<float> &dest, int width, int cx, int cy, int chunkSize);
     void sobelY(const std::vector<float> &src, std::vector<float> &dest, int width, int cx, int cy, int chunkSize);
-    void sobelCombine(const std::vector<float> &srcX, const std::vector<float> &srcY, std::vector<float> &dest, int width, float clip, int cx, int cy, int chunkSize);
+    void sobelCombine(const std::vector<float> &srcX, const std::vector<float> &srcY, std::vector<float> &dest, int width, int cx, int cy, int chunkSize);
 }

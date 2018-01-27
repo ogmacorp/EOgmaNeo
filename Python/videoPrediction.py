@@ -27,8 +27,8 @@ WINDOW_WIDTH = int((IMAGE_WIDTH + 2) * 3.5)
 WINDOW_HEIGHT = int(72 + (IMAGE_HEIGHT + 2))
 
 # Open the example movie file, using OpenCV
-MOVIE = '../source/examples/Clock-OneArm.mp4'
-# MOVIE = '../source/examples/Tesseract.mp4'
+# MOVIE = '../source/examples/Clock-OneArm.mp4'
+MOVIE = '../source/examples/Tesseract.mp4'
 
 cap = cv2.VideoCapture(MOVIE)
 
@@ -102,7 +102,7 @@ for i in range(NUM_LAYERS):
     ld._ticksPerUpdate = 2
     ld._temporalHorizon = 2
 
-    ld._alpha = 0.5
+    ld._alpha = 0.1
     ld._beta = 0.1
 
     # Disable reinforcement learning
@@ -160,12 +160,14 @@ print(
     "       The Escape key can be used to skip each step.\n")
 
 
-ITERATIONS = int(CAPTURE_LENGTH)
 PRE_ENCODER_ITERS = int(CAPTURE_LENGTH)
+ITERATIONS = 16 #int(CAPTURE_LENGTH)
 
 # Let the image pre-encoder see the movie more times
 if "Clock-OneArm" in MOVIE:
     PRE_ENCODER_ITERS *= 4
+elif "Tesseract" in MOVIE:
+    PRE_ENCODER_ITERS //= 4
 
 stdout.flush()
 
@@ -202,8 +204,7 @@ for j in range(PRE_ENCODER_ITERS):
         recon = preEncoder.reconstruct(hiddenStates, cs)
 
         # Update the image pre-encoder weighting
-        preEncoder.addSample(frame.ravel())
-        preEncoder.learn(0.5, cs)
+        preEncoder.learn(0.95, cs)
 
         # Scale frame copy to [0, 255] for display
         frame *= 255.0
@@ -262,7 +263,7 @@ for j in range(ITERATIONS):
         h.step(inputs, cs, True)
 
         # Decode the predicted state
-        prediction = h.getPrediction(0)
+        prediction = h.getPredictions(0)
         recon = preEncoder.reconstruct(prediction, cs)
 
         # Scale frame copy to [0, 255] for display
@@ -292,8 +293,8 @@ for j in range(ITERATIONS):
 
         pygame.display.update()
 
-        if j is 1 or j is ITERATIONS-1:
-            time.sleep(0.5)
+        if j is 0 or j is 1:
+            time.sleep(0.25)
 
 
 # --------------------------------------------------
@@ -317,11 +318,11 @@ while quit is False:
     frameCount += 1
 
     # Step the predictive hierarchy
-    inputs = [h.getPrediction(0)]
-    h.step(inputs, cs, True)
+    inputs = [h.getPredictions(0)]
+    h.step(inputs, cs, False)
 
     # Decode the predicted state
-    prediction = h.getPrediction(0)
+    prediction = h.getPredictions(0)
     recon = preEncoder.reconstruct(prediction, cs)
 
     # Unravel reconstructed image and rescale to [0, 255] for display

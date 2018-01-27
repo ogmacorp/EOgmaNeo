@@ -1,18 +1,22 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
 // ----------------------------------------------------------------------------
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
 #include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <vector>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#include <Hierarchy.h>
+using namespace eogmaneo;
+
 
 // define range function (only once)
 template <typename T>
@@ -22,8 +26,6 @@ std::vector <T> range(T N1, T N2) {
     return numbers;
 }
 
-#include <Hierarchy.h>
-using namespace eogmaneo;
 
 int main() {
     const int hiddenWidth = 16;
@@ -37,7 +39,7 @@ int main() {
 
     const std::vector<float> bounds = { -1.0f, 1.0f };
 
-    ComputeSystem *system = new ComputeSystem(4);
+    auto system = std::make_shared<ComputeSystem>(4);
 
     std::vector<LayerDesc> lds;
 
@@ -92,7 +94,7 @@ int main() {
     arr = range(0, 100);
     for (auto t : arr) {
         // First input layer prediction
-        const std::vector<int> predSDR = h1.getPrediction(0);
+        const std::vector<int> predSDR = h1.getPredictions(0);
 
         // Decode value
         float value = predSDR[0] / float(unitsPerChunk - 1) * (bounds[1] - bounds[0]) + bounds[0];
@@ -107,7 +109,7 @@ int main() {
     // Recall the sequence
     for (auto t : arr) {
         // First input layer prediction
-        const std::vector<int> predSDR = h2.getPrediction(0);
+        const std::vector<int> predSDR = h2.getPredictions(0);
 
         // Decode value
         float value = predSDR[0] / float(unitsPerChunk - 1) * (bounds[1] - bounds[0]) + bounds[0];
@@ -119,6 +121,5 @@ int main() {
         h2.step(valueToEncode, *system, false);
     }
 
-    delete system;
     return 0;
 }
