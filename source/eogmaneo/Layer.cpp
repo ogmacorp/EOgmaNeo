@@ -94,9 +94,9 @@ void ForwardWorkItem::run(size_t threadIndex) {
                                 
                                 float target = index == maxIndexPrev ? 1.0f : 0.0f;
 
-                                float recon = std::tanh(_pLayer->_reconActivationsPrev[v][vIndex]);
+                                float recon = _pLayer->_reconActivationsPrev[v][vIndex].first / std::max(1.0f, _pLayer->_reconActivationsPrev[v][vIndex].second);
 
-                                _pLayer->_feedForwardWeights[iPrev][wi] += _pLayer->_alpha * (target - recon);
+                                _pLayer->_feedForwardWeights[iPrev][wi] += _pLayer->_alpha * (target - std::tanh(recon));
                             }
                         }
 
@@ -190,7 +190,8 @@ void ForwardWorkItem::run(size_t threadIndex) {
                                 int vIndex = ovx + ovy * _pLayer->_visibleLayerDescs[v]._width;
 
                                 // Reconstruction
-                                _pLayer->_reconActivations[v][vIndex] += _pLayer->_feedForwardWeights[i][wi];
+                                _pLayer->_reconActivations[v][vIndex].first += _pLayer->_feedForwardWeights[i][wi];
+                                _pLayer->_reconActivations[v][vIndex].second += 1.0f;
                             }
                         }
                 }
@@ -222,6 +223,8 @@ void BackwardWorkItem::run(size_t threadIndex) {
     // Extract input views
     std::vector<float> chunkActivations(visibleChunkSize * visibleChunkSize, 0.0f);
     std::vector<float> chunkActivationsPrev(chunkActivations.size(), 0.0f);
+    float chunkDiv = 0.0f;
+    float chunkDivPrev = 0.0f;
 
     int spatialHiddenRadius = _pLayer->_visibleLayerDescs[v]._backwardRadius;
 
@@ -294,6 +297,8 @@ void BackwardWorkItem::run(size_t threadIndex) {
         
                             chunkActivations[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].first;
                         }
+
+                        chunkDiv += 1.0f;
                     }
 
                     if (fxPrev >= lowerHiddenX && fxPrev <= upperHiddenX && fyPrev >= lowerHiddenY && fyPrev <= upperHiddenY) {
@@ -307,6 +312,8 @@ void BackwardWorkItem::run(size_t threadIndex) {
         
                             chunkActivationsPrev[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].first;
                         }
+
+                        chunkDivPrev += 1.0f;
                     }
                 }
 
@@ -321,6 +328,8 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
                         chunkActivations[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].second;
                     }
+
+                    chunkDiv += 1.0f;
                 }
 
                 if (hxPrev >= lowerHiddenX && hxPrev <= upperHiddenX && hyPrev >= lowerHiddenY && hyPrev <= upperHiddenY) {
@@ -334,6 +343,8 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
                         chunkActivationsPrev[c] += _pLayer->_feedBackWeights[v][ivIndex][wi].second;
                     }
+
+                    chunkDivPrev += 1.0f;
                 }
             }
         }
@@ -347,15 +358,15 @@ void BackwardWorkItem::run(size_t threadIndex) {
 
     int predIndex = 0;
 
-    for (int c = 1; c < chunkActivations.size(); c++) {
+    for (int c = 0; c < chunkActivations.size(); c++) {
+        chunkActivations[c] = sigmoid(chunkActivations[c] / std::max(1.0f, chunkDiv));
+        chunkActivationsPrev[c] = sigmoid(chunkActivationsPrev[c] / std::max(1.0f, chunkDivPrev));
+        
         if (chunkActivations[c] > chunkActivations[predIndex])
             predIndex = c;
     }
 
     _pLayer->_predictions[v][_visibleChunkIndex] = predIndex;
-
-    for (int c = 0; c < chunkActivationsPrev.size(); c++)
-        chunkActivationsPrev[c] = sigmoid(chunkActivationsPrev[c]);
 
     for (int dcx = -spatialChunkRadius; dcx <= spatialChunkRadius; dcx++)
         for (int dcy = -spatialChunkRadius; dcy <= spatialChunkRadius; dcy++) {
@@ -434,7 +445,7 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int chunkSize, const std::
 
     _hiddenStates.resize(hiddenChunksInX * hiddenChunksInY, 0);
 
-    std::uniform_real_distribution<float> initWeightDist(-0.1f, 0.1f);
+    std::uniform_real_distribution<float> initWeightDist(0.0f, 0.01f);
 
     for (int v = 0; v < visibleLayerDescs.size(); v++) {
         _inputs[v].resize((_visibleLayerDescs[v]._width / _visibleLayerDescs[v]._chunkSize) * (_visibleLayerDescs[v]._height / _visibleLayerDescs[v]._chunkSize), 0);
@@ -452,7 +463,7 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int chunkSize, const std::
                 _feedForwardWeights[i].resize(forwardVecSize);
 
                 for (int j = 0; j < forwardVecSize; j++)
-                    _feedForwardWeights[i][j] = 1.0f + initWeightDist(rng);
+                    _feedForwardWeights[i][j] = 1.0f - initWeightDist(rng);
             }
     }
 
@@ -670,7 +681,7 @@ void Layer::forward(const std::vector<std::vector<int>> &inputs, ComputeSystem &
     _reconActivations.resize(_visibleLayerDescs.size());
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++)
-        _reconActivations[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height, 0.0f);
+        _reconActivations[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height, std::pair<float, float>(0.0f, 0.0f));
 
     if (_reconActivationsPrev.empty())
         _reconActivationsPrev = _reconActivations;

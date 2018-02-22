@@ -61,4 +61,4 @@ Refer to the EOgmaNeo [CONTRIBUTING.md](https://github.com/ogmacorp/EOgmaNeo/blo
 
 Contact Ogma via licenses@ogmacorp.com to discuss commercial use and licensing options.
 
-EOgmaNeo Copyright (c) 2017 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.
+EOgmaNeo Copyright (c) 2017-2018 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.

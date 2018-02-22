@@ -1,3 +1,10 @@
+1.2.7 February, 2018
+====================
+
+- Layer improvements
+- Addition of a SparseImageEncoder for pre-encoding
+- Python CopyTask example
+
 1.2.6 January, 2018
 ===================
 
