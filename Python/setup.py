@@ -176,18 +176,15 @@ class build_ext_subclass(build_ext):
 extension_mod = Extension(
     name="_eogmaneo",
     sources=["pyeogmaneo.i",
-             "../source/eogmaneo/ComputeSystem.cpp",
              "../source/eogmaneo/Hierarchy.cpp",
-             "../source/eogmaneo/KMeansEncoder.cpp",
-             "../source/eogmaneo/ImageEncoder.cpp",
-             "../source/eogmaneo/Position2DEncoder.cpp",
-             "../source/eogmaneo/RLEncoder.cpp",
-             "../source/eogmaneo/Preprocessing.cpp",]
+             "../source/eogmaneo/Layer.cpp",
+             "../source/eogmaneo/Preprocessing.cpp",
+             "../source/eogmaneo/ThreadPool.cpp",]
 )
 
 setup(
     name="eogmaneo",
-    version="1.2.6",
+    version="1.2.7",
     description="Python bindings for the EOgmaNeo library",
     long_description='https://github.com/ogmacorp/EOgmaNeo',
     author='Ogma Intelligent Systems Corp',

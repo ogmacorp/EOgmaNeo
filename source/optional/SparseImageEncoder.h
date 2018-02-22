@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -13,18 +13,19 @@
 #include <random>
 
 namespace eogmaneo {
-	class ImageEncoder;
+	class SparseImageEncoder;
 	
     /*!
     \brief Image encoder work item. Internal use only.
     */
-	class ImageEncoderWorkItem : public WorkItem {
+	class SparseImageEncoderWorkItem : public WorkItem {
 	public:
-		ImageEncoder* _pEncoder;
+		SparseImageEncoder* _pEncoder;
 
 		int _cx, _cy;
+        int _inputChunkSize;
 
-		ImageEncoderWorkItem()
+		SparseImageEncoderWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -34,41 +35,23 @@ namespace eogmaneo {
     /*!
     \brief Image decoder work item. Internal use only.
     */
-	class ImageDecoderWorkItem : public WorkItem {
+	class SparseImageInhibitWorkItem : public WorkItem {
 	public:
-		ImageEncoder* _pEncoder;
+		SparseImageEncoder* _pEncoder;
 
 		int _cx, _cy;
 
-		ImageDecoderWorkItem()
+		SparseImageInhibitWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
 		void run(size_t threadIndex) override;
 	};
-
-    /*!
-    \brief Image learn work item. Internal use only.
-    */
-    class ImageLearnWorkItem : public WorkItem {
-    public:
-        ImageEncoder* _pEncoder;
-
-        int _cx, _cy;
-
-        float _alpha;
-
-        ImageLearnWorkItem()
-            : _pEncoder(nullptr)
-        {}
-
-        void run(size_t threadIndex) override;
-    };
 	
     /*!
     \brief Encoders values to a chunked SDR through random transformation.
     */
-    class ImageEncoder {
+    class SparseImageEncoder {
     private:
         int _inputWidth, _inputHeight;
         int _hiddenWidth, _hiddenHeight;
@@ -76,17 +59,14 @@ namespace eogmaneo {
         int _radius;
 
         std::vector<int> _hiddenStates;
+        std::vector<float> _hiddenActivations;
 
         std::vector<float> _weights;
 
-		void activate(int cx, int cy);
-		void reconstruct(int cx, int cy);
-        void learn(int cx, int cy, float alpha);
+		void activate(int cx, int cy, int inputChunkSize);
+		void inhibit(int cx, int cy);
 
-		std::vector<int> _reconHiddenStates;
 		std::vector<float> _input;
-		std::vector<float> _recon;
-		std::vector<float> _count;
 		
     public:
         /*!
@@ -107,33 +87,7 @@ namespace eogmaneo {
         \param input input vector/image.
         \param cs compute system to be used.
         */
-        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs);
-
-        /*!
-        \brief Reconstruct (reverse) an encoding.
-        \param hiddenStates hidden state vector in chunked format.
-        \param cs compute system to be used.
-        \return reconstructed vector.
-        */
-        const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs);
-
-        /*!
-        \brief Experimental learning functionality.
-        Requires that reconstruct(...) has been called, without another call to activate(...).
-        \param alpha weight learning rate.
-        \param cs compute system to be used.
-        */
-        void learn(float alpha, ComputeSystem &cs);
-
-        /*!
-        \brief Save to a file.
-        */
-        void save(const std::string &fileName);
-
-        /*!
-        \brief Load from file.
-        */
-        bool load(const std::string &fileName);
+        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs, int inputChunkSize = 8);
 
         //!@{
         /*!
@@ -182,8 +136,7 @@ namespace eogmaneo {
             return _hiddenStates;
         }
 		
-		friend class ImageEncoderWorkItem;
-		friend class ImageDecoderWorkItem;
-        friend class ImageLearnWorkItem;
+		friend class SparseImageEncoderWorkItem;
+		friend class SparseImageInhibitWorkItem;
     };
 }

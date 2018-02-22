@@ -102,8 +102,8 @@ for i in range(NUM_LAYERS):
     ld._ticksPerUpdate = 2
     ld._temporalHorizon = 2
 
-    ld._alpha = 0.1
-    ld._beta = 0.1
+    ld._alpha = 0.4
+    ld._beta = 0.4
 
     # Disable reinforcement learning
     ld._gamma = 0.0

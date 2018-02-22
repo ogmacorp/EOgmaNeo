@@ -51,8 +51,8 @@ int main() {
         ld._chunkSize = chunkSize;
         ld._forwardRadius = 12;
         ld._backwardRadius = 12;
-        ld._alpha = 0.1f;
-        ld._beta = 0.01f;
+        ld._alpha = 0.4f;
+        ld._beta = 0.4f;
         ld._temporalHorizon = 2;
 
         lds.push_back(ld);

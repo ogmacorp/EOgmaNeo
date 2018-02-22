@@ -17,12 +17,6 @@
 #include <random>
 #include <thread>
 
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <unistd.h>
-#endif
-
 #include <Hierarchy.h>
 #include <ImageEncoder.h>
 #include <VisAdapter.h>
@@ -42,7 +36,7 @@ const float xOffset = 96.0f;
 const int progressBarLength = 40;
 
 // Predictive hierarchy settings
-const int numLayers = 1;
+const int numLayers = 4;
 const int hiddenWidth = 32;
 const int hiddenHeight = 32;
 const int chunkSize = 4;
@@ -87,8 +81,8 @@ void ConstructEOgmaNeoHierarchy() {
         ld._ticksPerUpdate = 2;
         ld._temporalHorizon = 2;
 
-        ld._alpha = 0.1f;
-        ld._beta = 0.1f;
+        ld._alpha = 0.4f;
+        ld._beta = 0.4f;
 
         lds.push_back(ld);
 
@@ -555,13 +549,9 @@ int main() {
 
             window.display();
 
-            if (iter == 0 || iter == 1) {
-                unsigned long msDelay = 1000;
-#ifdef _WIN32
-                Sleep(msDelay);
-#else
-                usleep(msDelay * 1000);
-#endif
+            if (0) { //iter == 0 || iter == 1) {
+                unsigned long msDelay = 500;
+                sf::sleep(sf::milliseconds(msDelay));
             }
         } while (!frame.empty() && !quit);
 

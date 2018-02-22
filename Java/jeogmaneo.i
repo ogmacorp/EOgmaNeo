@@ -25,6 +25,7 @@
 #include "KMeansEncoder.h"
 #include "ImageEncoder.h"
 #include "Position2DEncoder.h"
+#include "SparseImageEncoder.h"
 #include "RLEncoder.h"
 #endif
 #ifdef SFML_FOUND
@@ -59,6 +60,7 @@
 %include "KMeansEncoder.h"
 %include "ImageEncoder.h"
 %include "Position2DEncoder.h"
+%include "SparseImageEncoder.h"
 %include "RLEncoder.h"
 #endif
 

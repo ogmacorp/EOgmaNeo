@@ -114,8 +114,8 @@ namespace eogmaneo {
         std::vector<std::vector<float>> _feedForwardWeights;
         std::vector<std::vector<std::vector<std::pair<float, float>>>> _feedBackWeights;
 
-        std::vector<std::vector<float>> _reconActivations;
-        std::vector<std::vector<float>> _reconActivationsPrev;
+        std::vector<std::vector<std::pair<float, float>>> _reconActivations;
+        std::vector<std::vector<std::pair<float, float>>> _reconActivationsPrev;
 
         std::vector<VisibleLayerDesc> _visibleLayerDescs;
 

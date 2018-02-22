@@ -39,6 +39,7 @@ namespace eogmaneo {
 		friend class KMeansEncoder;
         friend class ImageEncoder;
 		friend class RLEncoder;
+        friend class SparseImageEncoder;
 
 		friend std::vector<float> whiten(const std::vector<float> &src, int width, int radius, float strength, ComputeSystem &cs, int chunkSize);
         friend std::vector<float> sobel(const std::vector<float> &src, int width, ComputeSystem &cs, int chunkSize);
