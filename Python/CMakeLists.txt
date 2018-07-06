@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #  EOgmaNeo
-#  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+#  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 #
 #  This copy of EOgmaNeo is licensed to you under the terms described
 #  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -31,36 +31,8 @@ if(PYTHON_VERSION)
     message("Python target version: ${PYTHON_VERSION}")            
 endif()
 
-option(BUILD_PREENCODERS OFF)
+option(BUILD_PREENCODERS ON)
 message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
-
-option(BUILD_NEOVIS_LINK ON)
-message(STATUS "Build NeoVis link: ${BUILD_NEOVIS_LINK}")
-
-
-############################################################################
-# Add SFML
-find_package(SFML 2 COMPONENTS system network)
-
-if(SFML_FOUND AND BUILD_NEOVIS_LINK)
-  #message(STATUS "SFML incs: " ${SFML_INCLUDE_DIR})
-  #message(STATUS "SFML libs: " ${SFML_LIBRARIES})
-  include_directories(${SFML_INCLUDE_DIR})
-else()
-  message(STATUS "Disabling SFML")
-  set(SFML_FOUND OFF)
-endif()
-
-
-############################################################################
-# Find OpenCV
-
-find_package(OpenCV HINTS /usr/local/opt/opencv3)
-
-if(OpenCV_FOUND)
-    #message(STATUS "Found existing OpenCV in ${OpenCV_INCLUDE_DIRS}")
-    include_directories(${OpenCV_INCLUDE_DIRS})
-endif()
 
 
 ############################################################################
@@ -82,34 +54,11 @@ if (BUILD_PREENCODERS)
   file(GLOB_RECURSE EOGMANEO_KMEANSENCODER_SRC "../source/optional/KMeansEncoder.*")
   list(APPEND EOGMANEO_SRC ${EOGMANEO_KMEANSENCODER_SRC})
 
-  file(GLOB_RECURSE EOGMANEO_POSITION2DENCODER_SRC "../source/optional/Position2DEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_POSITION2DENCODER_SRC})
-
-  file(GLOB_RECURSE EOGMANEO_SPARSEIMAGEENCODER_SRC "../source/optional/SparseImageEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_SPARSEIMAGEENCODER_SRC})
-
-  file(GLOB_RECURSE EOGMANEO_RLENCODER_SRC "../source/optional/RLEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_RLENCODER_SRC})
-endif()
-
-if(SFML_FOUND)
-  file(GLOB_RECURSE EOGMANEO_SFML_SRC "../source/optional/VisAdapter.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_SFML_SRC})
-endif()
-if(OpenCV_FOUND)
-  file(GLOB_RECURSE EOGMANEO_OPENCV_SRC "../source/optional/OpenCVInterop.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_OPENCV_SRC})
+  file(GLOB_RECURSE EOGMANEO_GABORENCODER_SRC "../source/optional/GaborEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_GABORENCODER_SRC})
 endif()
 
 add_library(EOgmaNeo ${EOGMANEO_SRC})
-
-if(SFML_FOUND)
-  target_link_libraries(EOgmaNeo ${SFML_LIBRARIES})
-endif()
-if(OpenCV_FOUND)
-    target_link_libraries(EOgmaNeo ${OpenCV_LIBS})
-endif()
-
 
 ############################################################################
 # Find SWIG and setup building the Python bindings to EOgmaNeo library
@@ -154,8 +103,8 @@ if(ANACONDA_PYTHON_FOUND)
     )
     string(REGEX MATCH "Python ([0-9]+)[.]([0-9]+)[.]([0-9]+)" _PYTHON_VERSION_FOUND "${_PYTHON_ERROR}")
     set(_PYTHON_VERSION_MAJOR ${CMAKE_MATCH_1})
-    set(_PYTHON_VERSION_MINOR ${CMAKE_MATCH_2})
-    set(_PYTHON_VERSION_PATCH ${CMAKE_MATCH_3})
+    set(_PYTHON_VERSION_MINOR ${CMAKE_MATCH_3})
+    set(_PYTHON_VERSION_PATCH ${CMAKE_MATCH_0})
 
     if(WIN32)
         set(ANACONDA_PYTHON_VERSION ${_PYTHON_VERSION_MAJOR}${_PYTHON_VERSION_MINOR})

@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #  EOgmaNeo
-#  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+#  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 #
 #  This copy of EOgmaNeo is licensed to you under the terms described
 #  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -13,8 +13,8 @@ project(EOgmaNeo)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
 set(EOGMANEO_MAJOR_VERSION 1)
-set(EOGMANEO_MINOR_VERSION 2)
-set(EOGMANEO_PATCH_VERSION 7)
+set(EOGMANEO_MINOR_VERSION 3)
+set(EOGMANEO_PATCH_VERSION 0)
 set(EOGMANEO_VERSION ${EOGMANEO_MAJOR_VERSION}.${EOGMANEO_MINOR_VERSION}.${EOGMANEO_PATCH_VERSION})
  
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
@@ -32,35 +32,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-option(BUILD_EXAMPLES OFF)
-message(STATUS "Build examples: ${BUILD_EXAMPLES}")
-
-option(BUILD_PREENCODERS OFF)
+option(BUILD_PREENCODERS ON)
 message(STATUS "Build pre-encoders: ${BUILD_PREENCODERS}")
-
-
-############################################################################
-# Find SFML
-#set(SFML_STATIC_LIBRARIES TRUE)
-find_package(SFML 2 COMPONENTS system network window graphics)
-
-if(SFML_FOUND)
-  #message(STATUS "SFML incs: " ${SFML_INCLUDE_DIR})
-  #message(STATUS "SFML libs: " ${SFML_LIBRARIES})
-  #message(STATUS "SFML deps: " ${SFML_DEPENDENCIES})
-  include_directories(${SFML_INCLUDE_DIR})
-endif()
-
-
-############################################################################
-# Find OpenCV
-
-find_package(OpenCV HINTS /usr/local/opt/opencv3)
-
-if(OpenCV_FOUND)
-  #message(STATUS "Found existing OpenCV in ${OpenCV_INCLUDE_DIRS}")
-  include_directories(${OpenCV_INCLUDE_DIRS})
-endif()
 
 
 ############################################################################
@@ -82,33 +55,11 @@ if (BUILD_PREENCODERS)
   file(GLOB_RECURSE EOGMANEO_KMEANSENCODER_SRC "source/optional/KMeansEncoder.*")
   list(APPEND EOGMANEO_SRC ${EOGMANEO_KMEANSENCODER_SRC})
 
-  file(GLOB_RECURSE EOGMANEO_POSITION2DENCODER_SRC "source/optional/Position2DEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_POSITION2DENCODER_SRC})
-
-  file(GLOB_RECURSE EOGMANEO_SPARSEIMAGEENCODER_SRC "source/optional/SparseImageEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_SPARSEIMAGEENCODER_SRC})
-
-  file(GLOB_RECURSE EOGMANEO_RLENCODER_SRC "source/optional/RLEncoder.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_RLENCODER_SRC})
-endif()
-
-if(SFML_FOUND)
-  file(GLOB_RECURSE EOGMANEO_SFML_SRC "source/optional/VisAdapter.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_SFML_SRC})
-endif()
-if(OpenCV_FOUND)
-  file(GLOB_RECURSE EOGMANEO_OPENCV_SRC "source/optional/OpenCVInterop.*")
-  list(APPEND EOGMANEO_SRC ${EOGMANEO_OPENCV_SRC})
+  file(GLOB_RECURSE EOGMANEO_GABORENCODER_SRC "source/optional/GaborEncoder.*")
+  list(APPEND EOGMANEO_SRC ${EOGMANEO_GABORENCODER_SRC})
 endif()
 
 add_library(EOgmaNeo ${EOGMANEO_SRC})
-
-if(SFML_FOUND)
-  target_link_libraries(EOgmaNeo ${SFML_LIBRARIES})
-endif()
-if(OpenCV_FOUND)
-  target_link_libraries(EOgmaNeo ${OpenCV_LIBS})
-endif()
 
 if(MSVC)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS)
@@ -123,20 +74,6 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   endif()
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-endif()
-
-if(BUILD_EXAMPLES)
-  add_executable(SaveLoad source/examples/SaveLoad.cpp)
-  set_property(TARGET SaveLoad PROPERTY CXX_STANDARD 14)
-  set_property(TARGET SaveLoad PROPERTY CXX_STANDARD_REQUIRED ON)
-  target_link_libraries(SaveLoad EOgmaNeo)
-
-  if(SFML_FOUND AND OpenCV_FOUND)
-    add_executable(VideoPrediction source/examples/VideoPrediction.cpp)
-    set_property(TARGET VideoPrediction PROPERTY CXX_STANDARD 14)
-    set_property(TARGET VideoPrediction PROPERTY CXX_STANDARD_REQUIRED ON)
-    target_link_libraries(VideoPrediction EOgmaNeo ${SFML_LIBRARIES} ${SFML_DEPENDENCIES} ${OpenCV_LIBS})
-  endif()
 endif()
     
 # Offer the user the choice of overriding the installation directories

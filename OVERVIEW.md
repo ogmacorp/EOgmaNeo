@@ -1,6 +1,6 @@
 <!---
   EOgmaNeo
-  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 
   This copy of EOgmaNeo is licensed to you under the terms described
   in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -22,29 +22,27 @@ EOgmaNeo provides an implementation of Sparse Predictive Hierarchies. These are 
 
 An EOgmaNeo hierarchy consists of several layers. Each layer is 2-dimensional, it has a width, and a height. This is important for working with images, but for non-image tasks, one can simply ravel the data into a 2D setting. Connectivity patterns are also local – so you may need multiple layers to bridge between spatially distant information. The same goes for temporally distant information – more layers gives a larger memory horizon (exponentially increasing).
 
-Each layer has an associated chunk size – this is the size of one “tile” of neural activity, or chunk. The chunk size is the diameter of such a tile – so the total number of units in the chunk is (chunkSize)^2. Within a chunk only one unit is active at a time. Each chunk is therefore a one-hot vector. A 2D grid of chunks is called a chunked SDR (sparse distributed representation). To represent a chunked SDR, EOgmaNeo uses a list of active unit indices – one index per chunk. A chunked SDR therefore looks like the following image:
+Each layer has an associated column size – this is the size of one column of neural activity. If width and height are the X and Y dimensions, then the column size is Z (although it has additional meaning). Within a column only one unit is active at a time. Each column is therefore a one-hot vector. A 2D grid of column is called a columnar SDR (sparse distributed representation). To represent a columnar SDR, EOgmaNeo uses a list of active unit indices – one index per column.
 
-<img src="chunkedSDR.png" alt="Chunked SDR" style="width: 400px;"/>
+A columnar SDR is used by EOgmaNeo as a way of representing data. A particular columnar SDR state may represent object trajectories, motor commands, an image, a number of images in sequence (video), abstract concepts, timing information – any information can be mapped to a columnar SDR.
 
-A chunked SDR is used by EOgmaNeo as a way of representing data. A particular chunked SDR state may represent object trajectories, motor commands, an image, a number of images in sequence (video), abstract concepts, timing information – any information can be mapped to a chunked SDR.
-
-What is important about this particular format, however, is that it is both sparse, and locally sensitive. This means that very few units are active at a time, and similar chunked SDRs represent similar information.
+What is important about this particular format, however, is that it is both sparse, and locally sensitive. This means that very few units are active at a time, and similar columnar SDRs represent similar information.
 
 These two properties permit both online learning and generalization, respectively. Online learning requires that the representation be sparse, as to avoid overlap in a representation. However, too sparse isn’t good either – it ends up acting like a lookup table. We find that a trade-off produces optimal results, resulting in both online learning capabilities as well as generalizability.
 
 ## Pre-Encoding
 
-Now what remains is a problem of converting to a chunked SDR format. For this, we need a sort of “pre-encoder” (encoders are another concept used in EOgmaNeo, and are separate from pre-encoders for the most part). A pre-encoder maps from some data to a chunked SDR format.
+Now what remains is a problem of converting to a columnar SDR format. For this, we need a sort of “pre-encoder” (encoders are another concept used in EOgmaNeo, and are separate from pre-encoders for the most part). A pre-encoder maps from some data to a columnar SDR format.
 
 We find that specific pre-encoders are good at specific tasks, although general-purpose pre-encoders exist as well. Sparse coding, in particular, is a good way to learn a particular encoder. However, sparse coding is often slow, so we instead found that simpler methods often work better in terms of processing requirements, while still delivering reasonable end results.
 
-EOgmaNeo currently includes a small amount of pre-encoders. If you have any ideas for new pre-encoders, let us know! As of initial release, these are:
+EOgmaNeo currently includes a small amount of pre-encoders. If you have any ideas for new pre-encoders, let us know!
 
-- RandomEncoder (random projection followed by inhibition)
-- CornerEncoder (FAST corner detector, where most strongly detected corners are assigned to chunks)
-- LineSegmentEncoder – uses OpenCV’s Line Segment Detector (LSD) to find lines, of which the longest are mapped to chunks.
+- KMeansEncoder (random projection followed by inhibition)
+- ImageEncoder (Encoder for image data)
+- GaborEncoder (Alternative encoder for images with fixed Gabor filters)
 
-Once a pre-encoder maps the data to a chunked SDR, the data can be learned from and predicted by a EOgmaNeo hierarchy. Sometimes we also need a reverse mapping for the pre-encoder (pre-decoder), in order to retrieve results. RandomEncoder, for instance, is reversible, using its ```reconstruct(...)``` function.
+Once a pre-encoder maps the data to a columnar SDR, the data can be learned from and predicted by a EOgmaNeo hierarchy. Sometimes we also need a reverse mapping for the pre-encoder (pre-decoder), in order to retrieve results. KMeansEncoder, for instance, is reversible, using its ```reconstruct(...)``` function.
 
 ## Sine Wave
 

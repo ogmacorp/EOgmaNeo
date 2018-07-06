@@ -9,7 +9,6 @@
 #pragma once
 
 #include "Layer.h"
-#include "ComputeSystem.h"
 
 namespace eogmaneo {
     /*!
@@ -25,14 +24,13 @@ namespace eogmaneo {
         //!@}
 
         /*!
-        \brief The size of a chunk.
-        This size is the diameter of the chunk. The number of bits in a chunk is therefore _chunkSize^2.
+        \brief The size of a column.
         */
-		int _chunkSize;
+		int _columnSize;
 
         //!@{
         /*!
-        \brief Radii of forward and backward sparse weight matrices.
+        \brief Radii of forward, lateral and backward sparse weight matrices.
         */
 		int _forwardRadius;
         int _backwardRadius;
@@ -49,28 +47,17 @@ namespace eogmaneo {
 		int _temporalHorizon;
 
         /*!
-        \brief Encoder learning rate.
-        */
-        float _alpha;
-
-        /*!
-        \brief Decoder learning rate.
-        */
-        float _beta;
-
-        /*!
         \brief Initialize defaults.
         */
 		LayerDesc()
-			: _width(24), _height(24), _chunkSize(6),
-			_forwardRadius(9), _backwardRadius(9),
-			_ticksPerUpdate(2), _temporalHorizon(2),
-			_alpha(0.1f), _beta(0.1f)
+			: _width(4), _height(4), _columnSize(16),
+			_forwardRadius(2), _backwardRadius(2),
+			_ticksPerUpdate(2), _temporalHorizon(2)
 		{}
 	};
 
     /*!
-    \brief A hierarchy of layers, or agent (if reward is supplied).
+    \brief A hierarchy of layers, using exponential memory structure.
     */
     class Hierarchy {
     private:
@@ -78,48 +65,43 @@ namespace eogmaneo {
 
         std::vector<std::vector<std::vector<int> > > _histories;
 
-        std::vector<float> _alphas;
-        std::vector<float> _betas;
-
-        std::vector<bool> _updates;
+        std::vector<int> _updates;
 
         std::vector<int> _ticks;
         std::vector<int> _ticksPerUpdate;
 
         int _inputTemporalHorizon;
-        int _numInputs;
+        std::vector<std::pair<int, int> > _inputSizes;
 
     public:
         /*!
         \brief Create the hierarchy.
         \param inputSizes vector of input dimension tuples.
-        \param inputChunkSizes vector of input chunk sizes (diameters).
+        \param inputColumnSizes vector of input column sizes.
         \param predictInputs flags for which inputs to generate predictions for.
         \param layerDescs vector of LayerDesc structures, describing each layer in sequence.
         \param seed random number generator seed for generating the hierarchy.
         */
-        void create(const std::vector<std::pair<int, int> > &inputSizes, const std::vector<int> &inputChunkSizes, const std::vector<bool> &predictInputs, const std::vector<LayerDesc> &layerDescs, unsigned long seed);
+        void create(const std::vector<std::pair<int, int> > &inputSizes, const std::vector<int> &inputColumnSizes, const std::vector<bool> &predictInputs, const std::vector<LayerDesc> &layerDescs, unsigned long seed);
 
         /*!
-        \brief Load a hierarchy from a file instead of creating it randomly (as done by create(...) ).
-        Takes the file name.
+        \brief Simulation step/tick.
+        \param cs compute system to be used.
+        \param inputs vector of SDR vectors in columnar format.
+        \param learn whether learning should be enabled, defaults to true.
+        \param topFeedBack SDR vector in columnar format of top-level feed back state.
         */
-        bool load(const std::string &fileName);
+        void step(ComputeSystem &cs, const std::vector<std::vector<int> > &inputs, bool learn = true, const std::vector<int> &topFeedBack = {});
 
         /*!
-        \brief Save a hierarchy to a file.
-        Takes the file name.
+        \brief Save the hierarchy to a file.
         */
         void save(const std::string &fileName);
 
         /*!
-        \brief Simulation tick.
-        \param inputs vector of SDR vectors in chunked format.
-        \param cs compute system to be used.
-        \param learn whether learning should be enabled, defaults to true.
-        \param topFeedBack SDR vector in chunked format of top-level feedback state.
+        \brief Load the hierarchy from a file.
         */
-        void step(const std::vector<std::vector<int> > &inputs, ComputeSystem &cs, bool learn = true, const std::vector<int> &topFeedBack = {});
+        bool load(const std::string &fileName);
 
         /*!
         \brief Get the number of (hidden) layers.
@@ -135,21 +117,8 @@ namespace eogmaneo {
         const std::vector<int> &getPredictions(int i) const {
             int index = i * _inputTemporalHorizon;
 
-            return _layers.front()._predictions[index];
+            return _layers.front().getPredictions(index);
         }
-        
-        //!@{
-        /*!
-        \brief Accessors for layer parameters.
-        */
-        float getAlpha(int l) const {
-            return _alphas[l];
-        }
-
-        float getBeta(int l) const {
-            return _betas[l];
-        }
-        //!@}
 
         /*!
         \brief Whether this layer received on update this timestep.
@@ -182,7 +151,7 @@ namespace eogmaneo {
         /*!
         \brief Retrieve a layer.
         */
-        const Layer &getLayer(int l) const {
+        Layer &getLayer(int l) {
             return _layers[l];
         }
     };

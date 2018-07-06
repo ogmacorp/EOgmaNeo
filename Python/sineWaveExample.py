@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #  EOgmaNeo
-#  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+#  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 #
 #  This copy of EOgmaNeo is licensed to you under the terms described
 #  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -10,54 +10,82 @@
 
 import numpy as np
 import eogmaneo
+import matplotlib.pyplot as plt
 
-system = eogmaneo.ComputeSystem(4)
+cs = eogmaneo.ComputeSystem(8)
 
-chunkSize = 8
-
-unitsPerChunk = chunkSize * chunkSize
+columnSize = 64
 
 bounds = (-1.0, 1.0) # Range of value
 
 lds = []
 
-for i in range(3):
+for i in range(9):
     ld = eogmaneo.LayerDesc()
 
-    ld._width = 16
-    ld._height = 16
-    ld._chunkSize = 8
-    ld._forwardRadius = ld._backwardRadius = 12
-    ld._alpha = 0.4
-    ld._beta = 0.4
+    ld._width = 5
+    ld._height = 5
+    ld._columnSize = 32
+    ld._forwardRadius = ld._backwardRadius = 2
+    ld._lateralRadius = 2
+    ld._ticksPerUpdate = 2
     ld._temporalHorizon = 2
-
+    
     lds.append(ld)
 
 h = eogmaneo.Hierarchy()
 
-h.create([ ( chunkSize, chunkSize) ], [ chunkSize ], [ True ], lds, 123)
+h.create([ (1, 1) ], [ columnSize ], [ True ], lds, 123)
 
-# Present the sine wave sequence for 1000 steps
-for t in range(5000):
-    valueToEncode = np.sin(t * 0.02 * 2.0 * np.pi) # Test value
+# Set parameters
+for i in range(len(lds)):
+    l = h.getLayer(i)
+    l._alpha = 0.01
+    l._beta = 0.1
+    
+# Present the wave sequence
+iters = 8000
 
-    # Single-chunk SDR
-    chunkedSDR = [ int((valueToEncode - bounds[0]) / (bounds[1] - bounds[0]) * (unitsPerChunk - 1) + 0.5) ]
+for t in range(iters):
+    index = t
 
-    h.step([ chunkedSDR ], system, True)
+    # Some function
+    valueToEncode = np.sin(index * 0.02 * 2.0 * np.pi) * 0.25 + np.sin(index * 0.05 * 2.0 * np.pi + 0.2) * 0.15 + (((index * 0.01) % 1.25) * 2.0 - 1.0) * 0.2
+
+    sdr =  [ int((valueToEncode - bounds[0]) / (bounds[1] - bounds[0]) * (columnSize - 1) + 0.5) ]
+
+    h.step(cs, [ sdr ], True)
+    
+    if t % 100 == 0:
+        print(t)
 
 # Recall
-for t in range(100):
-    predSDR = h.getPredictions(0) # First (only in this case) input layer prediction
+ts = []
+vs = []
+trgs = []
 
+for t in range(300):
+    t2 = t + iters
+
+    index = t2
+
+    # Some function
+    valueToEncode = np.sin(index * 0.02 * 2.0 * np.pi) * 0.25 + np.sin(index * 0.05 * 2.0 * np.pi + 0.2) * 0.15 + (((index * 0.01) % 1.25) * 2.0 - 1.0) * 0.2
+
+    h.step(cs, [ h.getPredictions(0) ], False)
+
+    predSDR = h.getPredictions(0)[0] # First (only in this case) input layer prediction
+    
     # Decode value
-    value = predSDR[0] / float(unitsPerChunk - 1) * (bounds[1] - bounds[0]) + bounds[0]
+    value = predSDR / float(columnSize - 1) * (bounds[1] - bounds[0]) + bounds[0]
+
+    ts.append(t)
+    vs.append(value)
+    trgs.append(valueToEncode)
 
     print(value)
 
-    h.step([ predSDR ], system, False)
-
-h.save("sineSave.eohr")
+plt.plot(ts, vs, ts, trgs)
+plt.show()
 
 
