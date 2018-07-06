@@ -18,13 +18,13 @@ namespace eogmaneo {
     /*!
     \brief Image encoder work item. Internal use only.
     */
-	class ImageEncoderWorkItem : public WorkItem {
+	class ImageEncoderActivateWorkItem : public WorkItem {
 	public:
 		ImageEncoder* _pEncoder;
 
 		int _cx, _cy;
 
-		ImageEncoderWorkItem()
+		ImageEncoderActivateWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -34,13 +34,13 @@ namespace eogmaneo {
     /*!
     \brief Image decoder work item. Internal use only.
     */
-	class ImageDecoderWorkItem : public WorkItem {
+	class ImageEncoderReconstructWorkItem : public WorkItem {
 	public:
 		ImageEncoder* _pEncoder;
 
 		int _cx, _cy;
 
-		ImageDecoderWorkItem()
+		ImageEncoderReconstructWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -50,7 +50,7 @@ namespace eogmaneo {
     /*!
     \brief Image learn work item. Internal use only.
     */
-    class ImageLearnWorkItem : public WorkItem {
+    class ImageEncoderLearnWorkItem : public WorkItem {
     public:
         ImageEncoder* _pEncoder;
 
@@ -58,7 +58,7 @@ namespace eogmaneo {
 
         float _alpha;
 
-        ImageLearnWorkItem()
+        ImageEncoderLearnWorkItem()
             : _pEncoder(nullptr)
         {}
 
@@ -66,13 +66,13 @@ namespace eogmaneo {
     };
 	
     /*!
-    \brief Encoders values to a chunked SDR through random transformation.
+    \brief Encoders values to a columnar SDR through random transformation.
     */
     class ImageEncoder {
     private:
         int _inputWidth, _inputHeight;
         int _hiddenWidth, _hiddenHeight;
-        int _chunkSize;
+        int _columnSize;
         int _radius;
 
         std::vector<int> _hiddenStates;
@@ -84,9 +84,9 @@ namespace eogmaneo {
         void learn(int cx, int cy, float alpha);
 
 		std::vector<int> _reconHiddenStates;
-		std::vector<float> _input;
-		std::vector<float> _recon;
-		std::vector<float> _count;
+		std::vector<float> _inputs;
+		std::vector<float> _recons;
+		std::vector<float> _counts;
 		
     public:
         /*!
@@ -95,11 +95,11 @@ namespace eogmaneo {
         \param inputHeight input image height.
         \param hiddenWidth hidden SDR width.
         \param hiddenHeight hidden SDR height.
-        \param chunkSize chunk diameter of hidden SDR.
+        \param columnSize column size of hidden SDR.
         \param radius radius onto the input.
         \param seed random number generator seed used when generating this encoder.
         */
-        void create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int chunkSize, int radius,
+        void create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int columnSize, int radius,
             unsigned long seed);
 
         /*!
@@ -107,15 +107,15 @@ namespace eogmaneo {
         \param input input vector/image.
         \param cs compute system to be used.
         */
-        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs);
+        const std::vector<int> &activate(ComputeSystem &cs, const std::vector<float> &inputs);
 
         /*!
         \brief Reconstruct (reverse) an encoding.
-        \param hiddenStates hidden state vector in chunked format.
+        \param hiddenStates hidden state vector in columnar format.
         \param cs compute system to be used.
         \return reconstructed vector.
         */
-        const std::vector<float> &reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs);
+        const std::vector<float> &reconstruct(ComputeSystem &cs, const std::vector<int> &hiddenStates);
 
         /*!
         \brief Experimental learning functionality.
@@ -123,17 +123,7 @@ namespace eogmaneo {
         \param alpha weight learning rate.
         \param cs compute system to be used.
         */
-        void learn(float alpha, ComputeSystem &cs);
-
-        /*!
-        \brief Save to a file.
-        */
-        void save(const std::string &fileName);
-
-        /*!
-        \brief Load from file.
-        */
-        bool load(const std::string &fileName);
+        void learn(ComputeSystem &cs, float alpha);
 
         //!@{
         /*!
@@ -164,8 +154,8 @@ namespace eogmaneo {
         /*!
         \brief Get (hidden) chunk size.
         */
-        int getChunkSize() const {
-            return _chunkSize;
+        int getColumnSize() const {
+            return _columnSize;
         }
 
         /*!
@@ -182,8 +172,8 @@ namespace eogmaneo {
             return _hiddenStates;
         }
 		
-		friend class ImageEncoderWorkItem;
-		friend class ImageDecoderWorkItem;
-        friend class ImageLearnWorkItem;
+		friend class ImageEncoderActivateWorkItem;
+		friend class ImageEncoderReconstructWorkItem;
+        friend class ImageEncoderLearnWorkItem;
     };
 }

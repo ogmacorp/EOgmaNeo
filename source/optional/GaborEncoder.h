@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2018 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -13,19 +13,18 @@
 #include <random>
 
 namespace eogmaneo {
-	class SparseImageEncoder;
+	class GaborEncoder;
 	
     /*!
     \brief Image encoder work item. Internal use only.
     */
-	class SparseImageEncoderWorkItem : public WorkItem {
+	class GaborEncoderActivateWorkItem : public WorkItem {
 	public:
-		SparseImageEncoder* _pEncoder;
+		GaborEncoder* _pEncoder;
 
 		int _cx, _cy;
-        int _inputChunkSize;
 
-		SparseImageEncoderWorkItem()
+		GaborEncoderActivateWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -35,13 +34,13 @@ namespace eogmaneo {
     /*!
     \brief Image decoder work item. Internal use only.
     */
-	class SparseImageInhibitWorkItem : public WorkItem {
+	class GaborEncoderReconstructWorkItem : public WorkItem {
 	public:
-		SparseImageEncoder* _pEncoder;
+		GaborEncoder* _pEncoder;
 
 		int _cx, _cy;
 
-		SparseImageInhibitWorkItem()
+		GaborEncoderReconstructWorkItem()
 			: _pEncoder(nullptr)
 		{}
 
@@ -51,22 +50,24 @@ namespace eogmaneo {
     /*!
     \brief Encoders values to a chunked SDR through random transformation.
     */
-    class SparseImageEncoder {
+    class GaborEncoder {
     private:
         int _inputWidth, _inputHeight;
         int _hiddenWidth, _hiddenHeight;
-        int _chunkSize;
+        int _columnSize;
         int _radius;
 
         std::vector<int> _hiddenStates;
-        std::vector<float> _hiddenActivations;
 
         std::vector<float> _weights;
 
-		void activate(int cx, int cy, int inputChunkSize);
-		void inhibit(int cx, int cy);
+		void activate(int cx, int cy);
+		void reconstruct(int cx, int cy);
 
-		std::vector<float> _input;
+		std::vector<int> _reconHiddenStates;
+		std::vector<float> _inputs;
+		std::vector<float> _recons;
+		std::vector<float> _counts;
 		
     public:
         /*!
@@ -75,19 +76,27 @@ namespace eogmaneo {
         \param inputHeight input image height.
         \param hiddenWidth hidden SDR width.
         \param hiddenHeight hidden SDR height.
-        \param chunkSize chunk diameter of hidden SDR.
+        \param columnSize column size of hidden SDR.
         \param radius radius onto the input.
         \param seed random number generator seed used when generating this encoder.
         */
-        void create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int chunkSize, int radius,
-            unsigned long seed);
+        void create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int columnSize, int radius,
+            unsigned long seed, float sigma = 6.0f, float lam = 0.6f);
 
         /*!
         \brief Activate the encoder from an input (compute hidden states, perform encoding).
         \param input input vector/image.
         \param cs compute system to be used.
         */
-        const std::vector<int> &activate(const std::vector<float> &input, ComputeSystem &cs, int inputChunkSize = 8);
+        const std::vector<int> &activate(ComputeSystem &cs, const std::vector<float> &inputs);
+
+        /*!
+        \brief Reconstruct (reverse) an encoding.
+        \param hiddenStates hidden state vector in chunked format.
+        \param cs compute system to be used.
+        \return reconstructed vector.
+        */
+        const std::vector<float> &reconstruct(ComputeSystem &cs, const std::vector<int> &hiddenStates);
 
         //!@{
         /*!
@@ -118,8 +127,8 @@ namespace eogmaneo {
         /*!
         \brief Get (hidden) chunk size.
         */
-        int getChunkSize() const {
-            return _chunkSize;
+        int getColumnSize() const {
+            return _columnSize;
         }
 
         /*!
@@ -135,8 +144,13 @@ namespace eogmaneo {
         const std::vector<int> &getHiddenStates() const {
             return _hiddenStates;
         }
+
+        const std::vector<float> &getWeights() const {
+            return _weights;
+        }
 		
-		friend class SparseImageEncoderWorkItem;
-		friend class SparseImageInhibitWorkItem;
+		friend class GaborEncoderActivateWorkItem;
+		friend class GaborEncoderReconstructWorkItem;
+        friend class GaborEncoderLearnWorkItem;
     };
 }

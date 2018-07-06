@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -8,25 +8,28 @@
 
 #include "KMeansEncoder.h"
 
+#include "Layer.h"
+
 #include <algorithm>
 #include <fstream>
 
 using namespace eogmaneo;
 
-void KMeansEncoderWorkItem::run(size_t threadIndex) {
+void KMeansEncoderActivateWorkItem::run(size_t threadIndex) {
 	_pEncoder->activate(_cx, _cy);
 }
 
-void KMeansDecoderWorkItem::run(size_t threadIndex) {
+void KMeansEncoderReconstructWorkItem::run(size_t threadIndex) {
 	_pEncoder->reconstruct(_cx, _cy);
 }
 
-void KMeansLearnWorkItem::run(size_t threadIndex) {
-    _pEncoder->learn(_cx, _cy, _alpha, _gamma, _minDistance);
+void KMeansEncoderLearnWorkItem::run(size_t threadIndex) {
+    _pEncoder->learn(_cx, _cy, _alpha);
 }
 
-void KMeansEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int chunkSize, int radius,
-    float initMinWeight, float initMaxWeight, unsigned long seed)
+void KMeansEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int columnSize, int radius,
+    float initMinWeight, float initMaxWeight,
+    unsigned long seed)
 {
     std::mt19937 rng;
     rng.seed(seed);
@@ -36,101 +39,84 @@ void KMeansEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int
     _hiddenWidth = hiddenWidth;
     _hiddenHeight = hiddenHeight;
 
-    _chunkSize = chunkSize;
+    _columnSize = columnSize;
 
     _radius = radius;
 
     std::uniform_real_distribution<float> weightDist(initMinWeight, initMaxWeight);
 
-    int diam = radius * 2 + 1;
+    int diam = _radius * 2 + 1;
 
     int weightsPerUnit = diam * diam;
 
-	int units = hiddenWidth * hiddenHeight;
+	int units = _hiddenWidth * _hiddenHeight * _columnSize;
 
-    _weights.resize(hiddenWidth * hiddenHeight * weightsPerUnit);
+    _weights.resize(units * weightsPerUnit);
 
-    for (int w = 0; w < _weights.size(); w++)
+    for (int w = 0; w < _weights.size(); w++) {
         _weights[w] = weightDist(rng);
+    }
 
-	int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
-
-    _hiddenStates.resize(chunksInX * chunksInY, 0);
-    _hiddenStatesPrev.resize(chunksInX * chunksInY, 0);
-
-    _hiddenActivations.resize(hiddenWidth * hiddenHeight, 0.0f);
-    _hiddenBiases.resize(hiddenWidth * hiddenHeight, 0.0f);
+    _hiddenStates.resize(_hiddenWidth * _hiddenHeight, 0);
 }
 
-const std::vector<int> &KMeansEncoder::activate(const std::vector<float> &input, ComputeSystem &cs) {
-	_input = input;
-	
-    int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
+const std::vector<int> &KMeansEncoder::activate(ComputeSystem &cs, const std::vector<float> &inputs) {
+	_inputs = inputs;
 
-    for (int cx = 0; cx < chunksInX; cx++)
-        for (int cy = 0; cy < chunksInY; cy++) {
-            std::shared_ptr<KMeansEncoderWorkItem> item = std::make_shared<KMeansEncoderWorkItem>();
+    for (int cx = 0; cx < _hiddenWidth; cx++)
+        for (int cy = 0; cy < _hiddenHeight; cy++) {
+            std::shared_ptr<KMeansEncoderActivateWorkItem> item = std::make_shared<KMeansEncoderActivateWorkItem>();
 
-			item->_cx = cx;
-			item->_cy = cy;
-			item->_pEncoder = this;
-
-			cs._pool.addItem(item);
+            item->_pEncoder = this;
+            item->_cx = cx;
+            item->_cy = cy;
+            
+            cs._pool.addItem(item);
         }
-		
-	cs._pool.wait();
+        
+    cs._pool.wait();
 
     return _hiddenStates;
 }
 
-const std::vector<float> &KMeansEncoder::reconstruct(const std::vector<int> &hiddenStates, ComputeSystem &cs) {
-    int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
-
+const std::vector<float> &KMeansEncoder::reconstruct(ComputeSystem &cs, const std::vector<int> &hiddenStates) {
     _reconHiddenStates = hiddenStates;
 	
-	_recon.clear();
-	_recon.assign(_inputWidth * _inputHeight, 0.0f);
+	_recons.clear();
+	_recons.assign(_inputWidth * _inputHeight, 0.0f);
 	
-	_count.clear();
-	_count.assign(_inputWidth * _inputHeight, 0.0f);
+	_counts.clear();
+	_counts.assign(_inputWidth * _inputHeight, 0.0f);
 	
-    for (int cx = 0; cx < chunksInX; cx++)
-        for (int cy = 0; cy < chunksInY; cy++) {
-            std::shared_ptr<KMeansDecoderWorkItem> item = std::make_shared<KMeansDecoderWorkItem>();
+    for (int cx = 0; cx < _hiddenWidth; cx++)
+        for (int cy = 0; cy < _hiddenHeight; cy++) {
+            std::shared_ptr<KMeansEncoderReconstructWorkItem> item = std::make_shared<KMeansEncoderReconstructWorkItem>();
 
-			item->_cx = cx;
-			item->_cy = cy;
 			item->_pEncoder = this;
-
+            item->_cx = cx;
+			item->_cy = cy;
+			
 			cs._pool.addItem(item);
         }
 		
 	cs._pool.wait();
 	
 	// Rescale
-	for (int i = 0; i < _recon.size(); i++)
-		_recon[i] /= std::max(0.0001f, _count[i]);
+	for (int i = 0; i < _recons.size(); i++)
+        _recons[i] = _recons[i] / std::max(0.0001f, _counts[i]);
 
-    return _recon;
+    return _recons;
 }
 
-void KMeansEncoder::learn(float alpha, float gamma, float minDistance, ComputeSystem &cs) {
-    int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
+void KMeansEncoder::learn(ComputeSystem &cs, float alpha) {
+    for (int cx = 0; cx < _hiddenWidth; cx++)
+        for (int cy = 0; cy < _hiddenHeight; cy++) {
+            std::shared_ptr<KMeansEncoderLearnWorkItem> item = std::make_shared<KMeansEncoderLearnWorkItem>();
 
-    for (int cx = 0; cx < chunksInX; cx++)
-        for (int cy = 0; cy < chunksInY; cy++) {
-            std::shared_ptr<KMeansLearnWorkItem> item = std::make_shared<KMeansLearnWorkItem>();
-
+            item->_pEncoder = this;
             item->_cx = cx;
             item->_cy = cy;
-            item->_pEncoder = this;
             item->_alpha = alpha;
-            item->_gamma = gamma;
-            item->_minDistance = minDistance;
 
             cs._pool.addItem(item);
         }
@@ -139,199 +125,124 @@ void KMeansEncoder::learn(float alpha, float gamma, float minDistance, ComputeSy
 }
 
 void KMeansEncoder::activate(int cx, int cy) {
-    int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
-
     int diam = _radius * 2 + 1;
     int weightsPerUnit = diam * diam;
 
-    int maxIndex = 0;
+    int maxCellIndex = 0;
     float maxValue = -99999.0f;
 
     // Projection
-    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(chunksInX);
-    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(chunksInY);
+    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(_hiddenWidth);
+    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(_hiddenHeight);
 
-    int centerX = cx * toInputX;
-    int centerY = cy * toInputY;
+    int centerX = cx * toInputX + 0.5f;
+    int centerY = cy * toInputY + 0.5f;
 
     int lowerX = centerX - _radius;
     int lowerY = centerY - _radius;
 
-    for (int dx = 0; dx < _chunkSize; dx++)
-        for (int dy = 0; dy < _chunkSize; dy++) {
-            int x = cx * _chunkSize + dx;
-            int y = cy * _chunkSize + dy;
+    for (int c = 0; c < _columnSize; c++) {
+        int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
-            // Compute value
-            float value = 0.0f;
+        // Compute value
+        float value = 0.0f;
 
-            for (int sx = 0; sx < diam; sx++)
-                for (int sy = 0; sy < diam; sy++) {
-                    int index = sx + sy * diam;
+        for (int sx = 0; sx < diam; sx++)
+            for (int sy = 0; sy < diam; sy++) {
+                int index = sx + sy * diam;
 
-                    int vx = lowerX + sx;
-                    int vy = lowerY + sy;
+                int vx = lowerX + sx;
+                int vy = lowerY + sy;
 
-                    if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
-                        float delta = _weights[index + weightsPerUnit * (x + y * _hiddenWidth)] - _input[vx + vy * _inputWidth];
+                if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                    int wi = index + weightsPerUnit * ui;
+                    int ii = vx + vy * _inputWidth;
 
-                        value += -delta * delta;
-                    }
+                    float d = _inputs[ii] - _weights[wi];
+                    
+                    value += -d * d;
                 }
-
-            _hiddenActivations[x + y * _hiddenWidth] = value;
-
-            value += _hiddenBiases[x + y * _hiddenWidth];
-                
-            if (value > maxValue) {
-                maxValue = value;
-                maxIndex = dx + dy * _chunkSize;
             }
-        }
 
-    _hiddenStatesPrev[cx + cy * chunksInX] = _hiddenStates[cx + cy * chunksInX];
-	_hiddenStates[cx + cy * chunksInX] = maxIndex;
+        if (value > maxValue) {
+            maxValue = value;
+            maxCellIndex = c;
+        }
+    }
+
+	_hiddenStates[cx + cy * _hiddenWidth] = maxCellIndex;
 }
 
 void KMeansEncoder::reconstruct(int cx, int cy) {
-	int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
-
     int diam = _radius * 2 + 1;
     int weightsPerUnit = diam * diam;
 
-    int maxIndex = 0;
+    int maxCellIndex = 0;
     float maxValue = -99999.0f;
 
     // Projection
-    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(chunksInX);
-    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(chunksInY);
+    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(_hiddenWidth);
+    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(_hiddenHeight);
 
-    int centerX = cx * toInputX;
-    int centerY = cy * toInputY;
+    int centerX = cx * toInputX + 0.5f;
+    int centerY = cy * toInputY + 0.5f;
 
     int lowerX = centerX - _radius;
     int lowerY = centerY - _radius;
 
-    // Retrieve view
-	{
-		int i = _reconHiddenStates[cx + cy * chunksInX];
+    int c = _reconHiddenStates[cx + cy * _hiddenWidth];
 
-        int dx = i % _chunkSize;
-		int dy = i / _chunkSize;
-		
-		int x = cx * _chunkSize + dx;
-		int y = cy * _chunkSize + dy;
+    int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
-		for (int sx = 0; sx < diam; sx++)
-			for (int sy = 0; sy < diam; sy++) {
-				int index = sx + sy * diam;
-				
-				int vx = lowerX + sx;
-				int vy = lowerY + sy;
+    for (int sx = 0; sx < diam; sx++)
+        for (int sy = 0; sy < diam; sy++) {
+            int index = sx + sy * diam;
+            
+            int vx = lowerX + sx;
+            int vy = lowerY + sy;
 
-				if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
-					_recon[vx + vy * _inputWidth] += _weights[index + weightsPerUnit * (x + y * _hiddenWidth)];
-					_count[vx + vy * _inputWidth] += 1.0f;
-				}
-			}
-	}
+            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                int wi = index + weightsPerUnit * ui;
+
+                _recons[vx + vy * _inputWidth] += _weights[wi];
+                _counts[vx + vy * _inputWidth] += 1.0f;
+            }
+        }
 }
 
-void KMeansEncoder::learn(int cx, int cy, float alpha, float gamma, float minDistance) {
-    int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
-
+void KMeansEncoder::learn(int cx, int cy, float alpha) {
     int diam = _radius * 2 + 1;
     int weightsPerUnit = diam * diam;
 
-    int maxIndex = 0;
+    int maxCellIndex = 0;
     float maxValue = -99999.0f;
 
     // Projection
-    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(chunksInX);
-    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(chunksInY);
+    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(_hiddenWidth);
+    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(_hiddenHeight);
 
-    int centerX = cx * toInputX;
-    int centerY = cy * toInputY;
+    int centerX = cx * toInputX + 0.5f;
+    int centerY = cy * toInputY + 0.5f;
 
     int lowerX = centerX - _radius;
     int lowerY = centerY - _radius;
 
-    int winX = _hiddenStates[cx + cy * chunksInX] % _chunkSize;
-    int winY = _hiddenStates[cx + cy * chunksInX] / _chunkSize;
+    int c = _hiddenStates[cx + cy * _hiddenWidth];
 
-    for (int dx = 0; dx < _chunkSize; dx++)
-        for (int dy = 0; dy < _chunkSize; dy++) {
-            int x = cx * _chunkSize + dx;
-            int y = cy * _chunkSize + dy;
+    int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
-            _hiddenBiases[x + y * _hiddenWidth] += gamma * (1.0f / (_chunkSize * _chunkSize) - (dx == winX && dy == winY ? 1.0f : 0.0f));
+    // Compute value
+    for (int sx = 0; sx < diam; sx++)
+        for (int sy = 0; sy < diam; sy++) {
+            int index = sx + sy * diam;
+
+            int vx = lowerX + sx;
+            int vy = lowerY + sy;
+
+            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                int wi = index + weightsPerUnit * ui;
+
+                _weights[wi] += alpha * (_inputs[vx + vy * _inputWidth] - _weights[wi]);
+            }
         }
-
-    {
-        int x = cx * _chunkSize + winX;
-        int y = cy * _chunkSize + winY;
-
-        {
-            // Compute value
-            for (int sx = 0; sx < diam; sx++)
-                for (int sy = 0; sy < diam; sy++) {
-                    int index = sx + sy * diam;
-
-                    int vx = lowerX + sx;
-                    int vy = lowerY + sy;
-
-                    if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight)
-                        _weights[index + weightsPerUnit * (x + y * _hiddenWidth)] += alpha * (_input[vx + vy * _inputWidth] - _weights[index + weightsPerUnit * (x + y * _hiddenWidth)]);
-                }
-        }
-    }
-}
-
-void KMeansEncoder::save(const std::string &fileName) {
-    std::ofstream s(fileName);
-
-    s << _inputWidth << " " << _inputHeight << " " << _hiddenWidth << " " << _hiddenHeight << " " << _chunkSize << " " << _radius << std::endl;
-    
-    for (int i = 0; i < _weights.size(); i++)
-        s << _weights[i] << std::endl;
-
-    for (int i = 0; i < _hiddenStates.size(); i++)
-        s << _hiddenStates[i] << " " << _hiddenStatesPrev[i] << std::endl;
-}
-
-bool KMeansEncoder::load(const std::string &fileName) {
-    std::ifstream s(fileName);
-
-    if (!s.is_open())
-        return false;
-
-    s >> _inputWidth >> _inputHeight >> _hiddenWidth >> _hiddenHeight >> _chunkSize >> _radius;
-
-    int diam = _radius * 2 + 1;
-
-    int weightsPerUnit = diam * diam;
-
-	int units = _hiddenWidth * _hiddenHeight;
-
-    _weights.resize(_hiddenWidth * _hiddenHeight * weightsPerUnit);
-
-    for (int w = 0; w < _weights.size(); w++)
-        s >> _weights[w];
-
-	int chunksInX = _hiddenWidth / _chunkSize;
-    int chunksInY = _hiddenHeight / _chunkSize;
-
-    _hiddenStates.resize(chunksInX * chunksInY);
-    _hiddenStatesPrev.resize(chunksInX * chunksInY);
-
-    for (int i = 0; i < _hiddenStates.size(); i++)
-        s >> _hiddenStates[i] >> _hiddenStatesPrev[i];
-
-    _hiddenActivations.resize(_hiddenWidth * _hiddenHeight, 0.0f);
-    _hiddenBiases.resize(_hiddenWidth * _hiddenHeight, 0.0f);
-
-    return true;
 }

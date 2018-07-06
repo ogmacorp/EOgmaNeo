@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 //  EOgmaNeo
-//  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+//  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 //
 //  This copy of EOgmaNeo is licensed to you under the terms described
 //  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -20,19 +20,10 @@
 #include "ComputeSystem.h"
 #include "Layer.h"
 #include "Hierarchy.h"
-#include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
 #include "KMeansEncoder.h"
 #include "ImageEncoder.h"
-#include "Position2DEncoder.h"
-#include "SparseImageEncoder.h"
-#include "RLEncoder.h"
-#endif
-#ifdef SFML_FOUND
-#include "VisAdapter.h"
-#endif
-#ifdef OPENCV_FOUND
-#include "OpenCVInterop.h"
+#include "GaborEncoder.h"
 #endif
 %}
 
@@ -57,27 +48,14 @@
 %template(Std2DVecf) std::vector<std::vector<float> >;
 %template(StdVecb) std::vector<bool>;
 
-%ignore eogmaneo::ForwardWorkItem;
-%ignore eogmaneo::BackwardWorkItem;
+%ignore eogmaneo::LayerForwardWorkItem;
+%ignore eogmaneo::LayerBackwardWorkItem;
 
 %include "ComputeSystem.h"
 %include "Layer.h"
 %include "Hierarchy.h"
-%include "Preprocessing.h"
 #ifdef BUILD_PREENCODERS
 %include "KMeansEncoder.h"
 %include "ImageEncoder.h"
-%include "Position2DEncoder.h"
-%include "SparseImageEncoder.h"
-%include "RLEncoder.h"
-#endif
-#ifdef SFML_FOUND
-%ignore eogmaneo::SDR;
-%ignore eogmaneo::WeightSet;
-%ignore eogmaneo::Network;
-%ignore eogmaneo::Caret;
-%include "VisAdapter.h"
-#endif
-#ifdef OPENCV_FOUND
-%include "OpenCVInterop.h"
+%include "GaborEncoder.h"
 #endif

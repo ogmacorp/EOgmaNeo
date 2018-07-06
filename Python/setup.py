@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #  EOgmaNeo
-#  Copyright(c) 2017 Ogma Intelligent Systems Corp. All rights reserved.
+#  Copyright(c) 2017-2018 Ogma Intelligent Systems Corp. All rights reserved.
 #
 #  This copy of EOgmaNeo is licensed to you under the terms described
 #  in the EOGMANEO_LICENSE.md file included in this distribution.
@@ -178,7 +178,6 @@ extension_mod = Extension(
     sources=["pyeogmaneo.i",
              "../source/eogmaneo/Hierarchy.cpp",
              "../source/eogmaneo/Layer.cpp",
-             "../source/eogmaneo/Preprocessing.cpp",
              "../source/eogmaneo/ThreadPool.cpp",]
 )
 

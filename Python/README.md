@@ -37,14 +37,6 @@ Further information on Python compatible Windows compilers can be found [here](h
 - Windows requires installation of SWIG (v3). With the SourceForge Zip expanded, and the PATH environment variable updating to include the SWIG installation binary directory (for example `C:\Program Files (x86)\swigwin-3.0.8`).
 - Mac OSX can use Homebrew to install the latest SWIG (for example, see .travis/install_swig.sh Bash script).
 
-#### OpenCV
-
-As noted in the main README.md file, an [OpenCV](http://opencv.org/) interop class is built into the EOgmaNeo library if the CMake build process finds OpenCV on your system. 
-
-**Notes:**
-- For the CMake build process to find OpenCV make sure that a `OpenCV_DIR` environment variable is set to the location of OpenCV, specifically the directory that contains the `OpenCVConfig.cmake` file. If this configuration file is not found the OpenCV interop code is not included in the library.
-- On Mac OSX, Homebrew can be used to cleanly install OpenCV, for example `brew install opencv3 --with-contrib --with-python3 --with-ffmpeg`
-
 ## Installation
 
 The following example can be used to build the Python package:
@@ -70,8 +62,6 @@ import eogmaneo
 
 Refer to the `sineWaveExample.py` example for further details.
 
-The `source/examples/VideoPrediction.cpp` example has also been ported to Python, and can be found in the `videoPrediction.py` file.
-
 ## Contributions
 
 Refer to the EOgmaNeo [CONTRIBUTING.md](https://github.com/ogmacorp/EOgmaNeo/blob/master/CONTRIBUTING.md) file for details about contributing to EOgmaNeo, including the signing of the [Ogma Contributor Agreement](https://ogma.ai/wp-content/uploads/2016/09/OgmaContributorAgreement.pdf).
@@ -82,4 +72,4 @@ Refer to the EOgmaNeo [CONTRIBUTING.md](https://github.com/ogmacorp/EOgmaNeo/blo
 
 Contact Ogma via licenses@ogmacorp.com to discuss commercial use and licensing options.
 
-EOgmaNeo Copyright (c) 2017 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.
+EOgmaNeo Copyright (c) 2017-2018 [Ogma Intelligent Systems Corp](https://ogmacorp.com). All rights reserved.

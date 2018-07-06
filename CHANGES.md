@@ -1,3 +1,12 @@
+1.3.0 July, 2018
+====================
+
+- Removed superfluous bindings and examples incompatible with newest version
+- Switched from 2D square chunked format to columnar format
+- Added GaborEncoder
+- Performance improvement
+- Optimization
+
 1.2.7 February, 2018
 ====================
 
