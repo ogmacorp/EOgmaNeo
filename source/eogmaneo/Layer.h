@@ -43,10 +43,12 @@ namespace eogmaneo {
     */
 	class LayerBackwardWorkItem : public WorkItem {
 	public:
-		class Layer* _pLayer;
+		Layer* _pLayer;
 
 		int _ci;
         int _v;
+
+        std::mt19937 _rng;
 
 		LayerBackwardWorkItem()
 			: _pLayer(nullptr)
@@ -97,6 +99,16 @@ namespace eogmaneo {
 	};
 
     /*!
+    \brief Replay sample.
+    */
+    struct ReplaySample {
+        std::vector<int> _hiddenStates;
+        std::vector<int> _feedBack;
+        std::vector<std::vector<int> > _inputs;
+        float _reward;
+    };
+
+    /*!
     \brief A layer in the hierarchy.
     */
     class Layer {
@@ -107,8 +119,6 @@ namespace eogmaneo {
 
         std::vector<int> _hiddenStates;
         std::vector<int> _hiddenStatesPrev;
-
-        std::vector<float> _hiddenActivations;
         
         std::vector<std::vector<std::vector<float>>> _feedForwardWeights;
         std::vector<std::vector<std::vector<float>>> _feedBackWeights;
@@ -119,21 +129,15 @@ namespace eogmaneo {
         
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;
-
-        std::vector<std::vector<float>> _recons;
-        std::vector<std::vector<float>> _reconCounts;
-
-        std::vector<std::vector<float>> _reconsActLearn;
-        std::vector<std::vector<float>> _reconCountsActLearn;
         
         std::vector<int> _feedBack;
-        std::vector<int> _feedBackPrev;
 
         bool _learn;
-        int _codeIter;
+        
+        std::vector<ReplaySample> _replaySamples;
   
         void columnForward(int ci);
-        void columnBackward(int ci, int v);
+        void columnBackward(int ci, int v, std::mt19937 &rng);
 
         /*!
         \brief Write to stream
@@ -153,15 +157,25 @@ namespace eogmaneo {
         float _beta;
 
         /*!
-        \brief Number of coding iterations.
+        \brief Discount factor.
         */
-        int _codeIters;
+        float _gamma;
+
+        /*!
+        \brief Maximum number of replay samples.
+        */
+        int _maxReplaySamples;
+
+        /*!
+        \brief Number of replay iterations.
+        */
+        int _replayIters;
 
         /*!
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.01f), _beta(0.1f), _codeIters(2)
+        : _alpha(0.01f), _beta(0.01f), _gamma(0.99f), _maxReplaySamples(64), _replayIters(8)
         {}
 
         /*!
@@ -169,6 +183,7 @@ namespace eogmaneo {
         \param hiddenWidth width of the layer.
         \param hiddenHeight height of the layer.
         \param columnSize column size of the layer.
+        \param hasFeedBack whether this layer has feed back.
         \param visibleLayerDescs descriptor structures for all visible layers this (hidden) layer has.
         \param seed random number generator seed for layer generation.
         */
@@ -176,17 +191,18 @@ namespace eogmaneo {
 
         /*!
         \brief Forward activation and learning.
-        \param inputs vector of input SDRs in columnar format.
-        \param learn whether learning is enabled.
+        \param inputs vector of input SDRs in chunked format.
+        \param learn whether to learn.
         */
         void forward(ComputeSystem &cs, const std::vector<std::vector<int> > &inputs, bool learn);
 
         /*!
         \brief Backward activation.
-        \param feedBack vector of feedback SDRs in columnar format.
-        \param learn whether learning is enabled.
+        \param feedBack vector of feedback SDRs in chunked format.
+        \param reward reinforcement signal.
+        \param learn whether to learn.
         */
-        void backward(ComputeSystem &cs, const std::vector<int> &feedBack, bool learn);
+        void backward(ComputeSystem &cs, const std::vector<int> &feedBack, float reward, bool learn);
 
         //!@{
         /*!
@@ -223,28 +239,28 @@ namespace eogmaneo {
         }
 
         /*!
-        \brief Get hidden states, in columnar format.
+        \brief Get hidden states, in chunked format.
         */
         const std::vector<int> &getHiddenStates() const {
             return _hiddenStates;
         }
 
         /*!
-        \brief Get hidden states, in columnar format.
+        \brief Get hidden states, in chunked format.
         */
         const std::vector<int> &getHiddenStatesPrev() const {
             return _hiddenStatesPrev;
         }
 
         /*!
-        \brief Get inputs of a visible layer, in columnar format.
+        \brief Get inputs of a visible layer, in chunked format.
         */
         const std::vector<int> &getInputs(int v) const {
             return _inputs[v];
         }
 
         /*!
-        \brief Get predictions of a visible layer, in columnar format.
+        \brief Get predictions of a visible layer, in chunked format.
         */
         const std::vector<int> &getPredictions(int v) const {
             return _predictions[v];

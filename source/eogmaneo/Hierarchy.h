@@ -67,6 +67,9 @@ namespace eogmaneo {
 
         std::vector<int> _updates;
 
+        std::vector<float> _rewards;
+        std::vector<float> _rewardCounts;
+
         std::vector<int> _ticks;
         std::vector<int> _ticksPerUpdate;
 
@@ -85,13 +88,14 @@ namespace eogmaneo {
         void create(const std::vector<std::pair<int, int> > &inputSizes, const std::vector<int> &inputColumnSizes, const std::vector<bool> &predictInputs, const std::vector<LayerDesc> &layerDescs, unsigned long seed);
 
         /*!
-        \brief Simulation step/tick.
+        \brief Simulation tick.
+        \param inputs vector of SDR vectors in chunked format.
+        \param topFeedBack SDR vector in chunked format of top-level feed back state.
         \param cs compute system to be used.
-        \param inputs vector of SDR vectors in columnar format.
+        \param reward reinforcement signal.
         \param learn whether learning should be enabled, defaults to true.
-        \param topFeedBack SDR vector in columnar format of top-level feed back state.
         */
-        void step(ComputeSystem &cs, const std::vector<std::vector<int> > &inputs, bool learn = true, const std::vector<int> &topFeedBack = {});
+        void step(ComputeSystem &cs, const std::vector<std::vector<int> > &inputs, float reward, bool learn = true, const std::vector<int> &topFeedBack = {});
 
         /*!
         \brief Save the hierarchy to a file.

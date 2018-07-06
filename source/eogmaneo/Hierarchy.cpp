@@ -28,6 +28,9 @@ void Hierarchy::create(const std::vector<std::pair<int, int> > &inputSizes, cons
 
     _updates.resize(layerDescs.size(), false);
 
+    _rewards.resize(layerDescs.size(), 0.0f);
+    _rewardCounts.resize(layerDescs.size(), 0.0f);
+
 	_inputTemporalHorizon = layerDescs.front()._temporalHorizon;
     _inputSizes = inputSizes;
 
@@ -81,7 +84,7 @@ void Hierarchy::create(const std::vector<std::pair<int, int> > &inputSizes, cons
     }
 }
 
-void Hierarchy::step(ComputeSystem &cs, const std::vector<std::vector<int>> &inputs, bool learn, const std::vector<int> &topFeedBack) {
+void Hierarchy::step(ComputeSystem &cs, const std::vector<std::vector<int>> &inputs, float reward, bool learn, const std::vector<int> &topFeedBack) {
     assert(inputs.size() == _inputSizes.size());
 
     _ticks[0] = 0;
@@ -102,6 +105,9 @@ void Hierarchy::step(ComputeSystem &cs, const std::vector<std::vector<int>> &inp
     std::vector<int> updates(_layers.size(), false);
 
     for (int l = 0; l < _layers.size(); l++) {
+        _rewards[l] += reward;
+        _rewardCounts[l] += 1.0f;
+
         if (l == 0 || _ticks[l] >= _ticksPerUpdate[l]) {
             _ticks[l] = 0;
 
@@ -135,7 +141,12 @@ void Hierarchy::step(ComputeSystem &cs, const std::vector<std::vector<int>> &inp
             else
                 feedBack = topFeedBack;
 
-            _layers[l].backward(cs, feedBack, learn);
+            float r = _rewards[l] / std::max(1.0f, _rewardCounts[l]);
+
+            _layers[l].backward(cs, feedBack, r, learn);
+
+            _rewards[l] = 0.0f;
+            _rewardCounts[l] = 0.0f;
         }
     }
 
@@ -159,6 +170,8 @@ void Hierarchy::save(const std::string &fileName) {
     os.write(reinterpret_cast<char*>(_ticks.data()), _ticks.size() * sizeof(int));
     os.write(reinterpret_cast<char*>(_ticksPerUpdate.data()), _ticksPerUpdate.size() * sizeof(int));
     os.write(reinterpret_cast<char*>(_updates.data()), _updates.size() * sizeof(int));
+    os.write(reinterpret_cast<char*>(_rewards.data()), _rewards.size() * sizeof(float));
+    os.write(reinterpret_cast<char*>(_rewardCounts.data()), _rewardCounts.size() * sizeof(float));
 
     for (int l = 0; l < _layers.size(); l++) {
         int temporalHorizon = l == 0 ? _histories[l].size() / _inputSizes.size() : _histories[l].size();
@@ -207,6 +220,8 @@ bool Hierarchy::load(const std::string &fileName) {
     is.read(reinterpret_cast<char*>(_ticks.data()), _ticks.size() * sizeof(int));
     is.read(reinterpret_cast<char*>(_ticksPerUpdate.data()), _ticksPerUpdate.size() * sizeof(int));
     is.read(reinterpret_cast<char*>(_updates.data()), _updates.size() * sizeof(int));
+    is.read(reinterpret_cast<char*>(_rewards.data()), _rewards.size() * sizeof(float));
+    is.read(reinterpret_cast<char*>(_rewardCounts.data()), _rewardCounts.size() * sizeof(float));
 
     for (int l = 0; l < _layers.size(); l++) {
         int temporalHorizon;
