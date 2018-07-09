@@ -247,9 +247,6 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             predIndex = c;
     }
 
-    // Exploration
-    std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
-
     _predictions[v][ci] = predIndex;
 
     if (_replaySamples.size() > 2 && _learn) {
@@ -259,9 +256,11 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             const ReplaySample &s = _replaySamples[t];
             const ReplaySample &sPrev = _replaySamples[t + 1];
             
-            std::vector<float> sColumnActivationsPrev(visibleColumnSize, 0.0f);
+            float sColumnActivationPrev = 0.0f;
 
             int updateIndex = s._inputs[v][ci];
+
+            int visibleCellIndexUpdate =  ci + updateIndex * visibleWidth * visibleHeight;
 
             for (int dcx = -backwardRadius; dcx <= backwardRadius; dcx++)
                 for (int dcy = -backwardRadius; dcy <= backwardRadius; dcy++) {
@@ -277,11 +276,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
                             // Output cells
                             int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + feedBackIndexPrev * backwardSize;
 
-                            for (int c = 0; c < visibleColumnSize; c++) {
-                                int visibleCellIndex =  ci + c * visibleWidth * visibleHeight;
-
-                                sColumnActivationsPrev[c] += _feedBackWeights[v][visibleCellIndex][wiPrev];
-                            }
+                            sColumnActivationPrev += _feedBackWeights[v][visibleCellIndexUpdate][wiPrev];
                         }
 
                         int hiddenIndexPrev = sPrev._hiddenStates[hiddenColumnIndex];
@@ -289,24 +284,17 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
                         int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize + backwardVecSize;
 
                         // Output cells
-                        for (int c = 0; c < visibleColumnSize; c++) {
-                            int visibleCellIndex =  ci + c * visibleWidth * visibleHeight;
-
-                            sColumnActivationsPrev[c] += _feedBackWeights[v][visibleCellIndex][wiPrev];
-                        }
+                        sColumnActivationPrev += _feedBackWeights[v][visibleCellIndexUpdate][wiPrev];
                     }
                 }
 
-            for (int c = 0; c < visibleColumnSize; c++)
-                sColumnActivationsPrev[c] *= rescale;
+            sColumnActivationPrev *= rescale;
 
             // Learn
             float q = s._reward + _gamma * nextQ;
 
-            float update = _beta * (q - sColumnActivationsPrev[updateIndex]);
-
-            int visibleCellIndexUpdate =  ci + updateIndex * visibleWidth * visibleHeight;
-
+            float update = _beta * (q - sColumnActivationPrev);
+            
             for (int dcx = -backwardRadius; dcx <= backwardRadius; dcx++)
                 for (int dcy = -backwardRadius; dcy <= backwardRadius; dcy++) {
                     int cx = hiddenCenterX + dcx;
@@ -333,9 +321,6 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
                 }
 
             nextQ = q;
-
-            for (int c = 0; c < visibleColumnSize; c++)
-                nextQ = std::max(nextQ, sColumnActivationsPrev[c]);
         }
     }
 }
@@ -452,7 +437,7 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
     ReplaySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
-    s._inputs = _predictions;
+    s._inputs = _inputs;
     s._reward = reward;
 
     _replaySamples.insert(_replaySamples.begin(), s);
