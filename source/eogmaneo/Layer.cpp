@@ -250,13 +250,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
     // Exploration
     std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
 
-    if (dist01(rng) < _epsilon) {
-        std::uniform_int_distribution<int> columnDist(0, visibleColumnSize - 1);
-
-        _predictions[v][ci] = columnDist(rng);
-    }
-    else
-        _predictions[v][ci] = predIndex;
+    _predictions[v][ci] = predIndex;
 
     if (_replaySamples.size() > 2 && _learn) {
         float nextQ = columnActivations[predIndex];
@@ -267,7 +261,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             
             std::vector<float> sColumnActivationsPrev(visibleColumnSize, 0.0f);
 
-            int updateIndex = s._predictionsPrev[v][ci];
+            int updateIndex = s._inputs[v][ci];
 
             for (int dcx = -backwardRadius; dcx <= backwardRadius; dcx++)
                 for (int dcy = -backwardRadius; dcy <= backwardRadius; dcy++) {
@@ -311,7 +305,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
             float update = _beta * (q - sColumnActivationsPrev[updateIndex]);
 
-            int visibleCellIndexInput =  ci + updateIndex * visibleWidth * visibleHeight;
+            int visibleCellIndexUpdate =  ci + updateIndex * visibleWidth * visibleHeight;
 
             for (int dcx = -backwardRadius; dcx <= backwardRadius; dcx++)
                 for (int dcy = -backwardRadius; dcy <= backwardRadius; dcy++) {
@@ -327,14 +321,14 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
                             // Output cells
                             int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + feedBackIndexPrev * backwardSize;
 
-                            _feedBackWeights[v][visibleCellIndexInput][wiPrev] += update;
+                            _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                         }
 
                         int hiddenIndexPrev = sPrev._hiddenStates[hiddenColumnIndex];
 
                         int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize + backwardVecSize;
 
-                        _feedBackWeights[v][visibleCellIndexInput][wiPrev] += update;
+                        _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                     }
                 }
 
@@ -458,7 +452,7 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
     ReplaySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
-    s._predictionsPrev = _predictions;
+    s._inputs = _predictions;
     s._reward = reward;
 
     _replaySamples.insert(_replaySamples.begin(), s);
@@ -598,12 +592,12 @@ void Layer::readFromStream(std::istream &is) {
         if (s._feedBack.front() == -1)
             s._feedBack.clear();
 
-        s._predictionsPrev.resize(_visibleLayerDescs.size());
+        s._inputs.resize(_visibleLayerDescs.size());
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++) {
-            s._predictionsPrev[v].resize(_inputs[v].size());
+            s._inputs[v].resize(_inputs[v].size());
 
-            is.read(reinterpret_cast<char*>(s._predictionsPrev[v].data()), s._predictionsPrev[v].size() * sizeof(int));
+            is.read(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
         }
 
         is.read(reinterpret_cast<char*>(&s._reward), sizeof(float));
@@ -686,7 +680,7 @@ void Layer::writeToStream(std::ostream &os) {
         os.write(reinterpret_cast<char*>(writeFeedBack.data()), writeFeedBack.size() * sizeof(int));
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++)
-            os.write(reinterpret_cast<char*>(s._predictionsPrev[v].data()), s._predictionsPrev[v].size() * sizeof(int));
+            os.write(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
 
         os.write(reinterpret_cast<char*>(&s._reward), sizeof(float));
     }
