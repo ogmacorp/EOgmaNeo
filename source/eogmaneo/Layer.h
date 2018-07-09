@@ -119,6 +119,8 @@ namespace eogmaneo {
 
         std::vector<int> _hiddenStates;
         std::vector<int> _hiddenStatesPrev;
+
+        std::vector<float> _hiddenActivations;
         
         std::vector<std::vector<std::vector<float>>> _feedForwardWeights;
         std::vector<std::vector<std::vector<float>>> _feedBackWeights;
@@ -129,10 +131,18 @@ namespace eogmaneo {
         
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;
+
+        std::vector<std::vector<float>> _recons;
+        std::vector<std::vector<float>> _reconCounts;
+
+        std::vector<std::vector<float>> _reconsActLearn;
+        std::vector<std::vector<float>> _reconCountsActLearn;
         
         std::vector<int> _feedBack;
 
         bool _learn;
+
+        int _codeIter;
         
         std::vector<ReplaySample> _replaySamples;
   
@@ -162,20 +172,20 @@ namespace eogmaneo {
         float _gamma;
 
         /*!
+        \brief Number of coding iterations.
+        */
+        int _codeIters;
+
+        /*!
         \brief Maximum number of replay samples.
         */
         int _maxReplaySamples;
 
         /*!
-        \brief Number of replay iterations.
-        */
-        int _replayIters;
-
-        /*!
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.01f), _beta(0.01f), _gamma(0.99f), _maxReplaySamples(64), _replayIters(8)
+        : _alpha(0.01f), _beta(0.01f), _gamma(0.99f), _codeIters(4), _maxReplaySamples(64)
         {}
 
         /*!
