@@ -182,7 +182,21 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
     if (_replaySamples.size() > 2 && _learn) {
         float nextQ = columnActivations[predIndex];
 
+        std::vector<float> targetQs(_replaySamples.size() - 1);
+
         for (int t = 0; t < _replaySamples.size() - 1; t++) {
+            const ReplaySample &s = _replaySamples[t];
+            
+            targetQs[t] = s._reward + _gamma * nextQ;
+
+            nextQ = targetQs[t];
+        }
+
+        std::uniform_int_distribution<int> sampleDist(0, _replaySamples.size() - 2);
+
+        for (int it = 0; it < _replayIters; it++) {
+            int t = sampleDist(rng);
+
             const ReplaySample &s = _replaySamples[t];
             const ReplaySample &sPrev = _replaySamples[t + 1];
             
@@ -221,7 +235,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             sColumnActivationPrev *= rescale;
 
             // Learn
-            float q = s._reward + _gamma * nextQ;
+            float q = targetQs[t];
 
             float update = _beta * (q - sColumnActivationPrev);
             
@@ -249,8 +263,6 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
                         _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                     }
                 }
-
-            nextQ = q;
         }
     }
 }

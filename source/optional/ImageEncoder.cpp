@@ -42,7 +42,7 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
     _radius = radius;
 
-    std::uniform_real_distribution<float> weightDist(1.0f, 1.01f);
+    std::uniform_real_distribution<float> weightDist(0.0f, 1.0f);
 
     int diam = _radius * 2 + 1;
 
@@ -102,7 +102,7 @@ const std::vector<float> &ImageEncoder::reconstruct(ComputeSystem &cs, const std
 	
 	// Rescale
 	for (int i = 0; i < _recons.size(); i++)
-        _recons[i] = std::min(1.0f, std::max(0.0f, _recons[i] / std::max(0.0001f, _counts[i])));
+        _recons[i] /= std::max(0.0001f, _counts[i]);
 
     return _recons;
 }
@@ -239,7 +239,7 @@ void ImageEncoder::learn(int cx, int cy, float alpha) {
             if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
                 int wi = index + weightsPerUnit * ui;
 
-                _weights[wi] += alpha * (std::min(_inputs[vx + vy * _inputWidth], _weights[wi]) - _weights[wi]);
+                _weights[wi] += alpha * std::min(0.0f, _inputs[vx + vy * _inputWidth] - _weights[wi]);
             }
         }
 }
