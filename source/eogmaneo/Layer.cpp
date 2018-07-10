@@ -78,7 +78,7 @@ void Layer::columnForward(int ci) {
 
                             float target = c == inputIndexPrev ? 1.0f : 0.0f;
 
-                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + _alpha * std::min(0.0f, target - recon));
+                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + _alpha * (target - recon));
                         }
                     }
 
@@ -351,6 +351,8 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
     _inputs.resize(_visibleLayerDescs.size());
 
     _hiddenStates.resize(_hiddenWidth * _hiddenHeight, 0);
+    
+    _hiddenActivations.resize(_hiddenStates.size() * _columnSize);
 
     std::uniform_real_distribution<float> initWeightDistLow(-0.0001f, 0.0001f);
     std::uniform_real_distribution<float> initWeightDistHigh(0.99f, 1.0f);
