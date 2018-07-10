@@ -42,7 +42,7 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
     _radius = radius;
 
-    std::uniform_real_distribution<float> weightDist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> weightDist(0.99f, 1.0f);
 
     int diam = _radius * 2 + 1;
 
