@@ -32,22 +32,6 @@ namespace eogmaneo {
 	};
 	
     /*!
-    \brief Image decoder work item. Internal use only.
-    */
-	class ImageEncoderReconstructWorkItem : public WorkItem {
-	public:
-		ImageEncoder* _pEncoder;
-
-		int _cx, _cy;
-
-		ImageEncoderReconstructWorkItem()
-			: _pEncoder(nullptr)
-		{}
-
-		void run(size_t threadIndex) override;
-	};
-
-    /*!
     \brief Image learn work item. Internal use only.
     */
     class ImageEncoderLearnWorkItem : public WorkItem {
@@ -56,7 +40,7 @@ namespace eogmaneo {
 
         int _cx, _cy;
 
-        float _alpha;
+        float _beta;
 
         ImageEncoderLearnWorkItem()
             : _pEncoder(nullptr)
@@ -76,17 +60,16 @@ namespace eogmaneo {
         int _radius;
 
         std::vector<int> _hiddenStates;
+        std::vector<float> _hiddenActivations;
 
         std::vector<float> _weights;
+        std::vector<float> _biases;
 
 		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);
-        void learn(int cx, int cy, float alpha);
+        void learn(int cx, int cy, float beta);
 
-		std::vector<int> _reconHiddenStates;
 		std::vector<float> _inputs;
-		std::vector<float> _recons;
-		std::vector<float> _counts;
 		
     public:
         /*!
@@ -104,26 +87,17 @@ namespace eogmaneo {
 
         /*!
         \brief Activate the encoder from an input (compute hidden states, perform encoding).
-        \param input input vector/image.
         \param cs compute system to be used.
+        \param input input vector/image.
         */
         const std::vector<int> &activate(ComputeSystem &cs, const std::vector<float> &inputs);
 
         /*!
-        \brief Reconstruct (reverse) an encoding.
-        \param hiddenStates hidden state vector in columnar format.
-        \param cs compute system to be used.
-        \return reconstructed vector.
-        */
-        const std::vector<float> &reconstruct(ComputeSystem &cs, const std::vector<int> &hiddenStates);
-
-        /*!
         \brief Experimental learning functionality.
-        Requires that reconstruct(...) has been called, without another call to activate(...).
-        \param alpha weight learning rate.
         \param cs compute system to be used.
+        \param beta bias learning rate.
         */
-        void learn(ComputeSystem &cs, float alpha);
+        void learn(ComputeSystem &cs, float beta);
 
         //!@{
         /*!
