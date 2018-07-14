@@ -1,3 +1,9 @@
+1.3.1 July, 2018
+====================
+
+- Tuning to encoder rule
+- Fixed ImageEncoder training
+
 1.3.0 July, 2018
 ====================
 
