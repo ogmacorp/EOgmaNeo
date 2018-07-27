@@ -37,8 +37,6 @@ void Layer::columnForward(int ci) {
 
     int hiddenCellIndexPrev = ci + hiddenStatePrev * _hiddenWidth * _hiddenHeight;
 
-    float rate = _alpha / (1.0f + _hiddenRates[hiddenCellIndexPrev]);
-
     std::vector<float> columnActivations(_columnSize, 0.0f);
 
     // Activate feed forward
@@ -80,7 +78,7 @@ void Layer::columnForward(int ci) {
 
                             float target = (c == inputIndexPrev ? 1.0f : 0.0f);
 
-                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + rate * (target - recon));
+                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + _alpha * (target - recon));
                         }
                     }
 
@@ -109,16 +107,6 @@ void Layer::columnForward(int ci) {
                     }
                 }
             }
-    }
-
-    if (_codeIter == 0) {
-        _hiddenRates[hiddenCellIndexPrev] = std::min(99999.0f, _hiddenRates[hiddenCellIndexPrev] + 1.0f);
-
-        if (!_feedBack.empty()) {
-            int feedBackCellIndexPrev = ci + _feedBack[ci] * _hiddenWidth * _hiddenHeight;
-
-            _feedBackRates[feedBackCellIndexPrev] = std::min(99999.0f, _feedBackRates[feedBackCellIndexPrev] + 1.0f);
-        }
     }
 
 	// Find max element
@@ -334,9 +322,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
                             int feedBackCellIndexPrev = ci + feedBackIndexPrev * _hiddenWidth * _hiddenHeight;
 
-                            float rate = update / (1.0f + _feedBackRates[feedBackCellIndexPrev]);
-
-                            _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += rate;
+                            _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                         }
 
                         int hiddenIndexPrev = sPrev._hiddenStates[hiddenColumnIndex];
@@ -345,9 +331,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
                         int hiddenCellIndexPrev = ci + hiddenIndexPrev * _hiddenWidth * _hiddenHeight;
 
-                        float rate = update / (1.0f + _hiddenRates[hiddenCellIndexPrev]);
-
-                        _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += rate;
+                        _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                     }
                 }
         }
@@ -414,8 +398,6 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
                     }
         }
     }
-
-    _feedBackRates = _hiddenRates = _hiddenActivations;
 
     _feedBack = _hiddenStatesPrev = _hiddenStates;
 
@@ -540,11 +522,6 @@ void Layer::readFromStream(std::istream &is) {
         _feedBack.clear();
 
     _hiddenActivations.resize(_hiddenStates.size() * _columnSize);
-    _hiddenRates.resize(_hiddenActivations.size());
-    _feedBackRates.resize(_hiddenActivations.size());
-
-    is.read(reinterpret_cast<char*>(_hiddenRates.data()), _hiddenRates.size() * sizeof(float));
-    is.read(reinterpret_cast<char*>(_feedBackRates.data()), _feedBackRates.size() * sizeof(float));
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
@@ -656,9 +633,6 @@ void Layer::writeToStream(std::ostream &os) {
         writeFeedBack.resize(_hiddenStates.size(), -1);
 
     os.write(reinterpret_cast<char*>(writeFeedBack.data()), writeFeedBack.size() * sizeof(int));
-
-    os.write(reinterpret_cast<char*>(_hiddenRates.data()), _hiddenRates.size() * sizeof(float));
-    os.write(reinterpret_cast<char*>(_feedBackRates.data()), _feedBackRates.size() * sizeof(float));
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data

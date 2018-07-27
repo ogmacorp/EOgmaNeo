@@ -121,8 +121,6 @@ namespace eogmaneo {
         std::vector<int> _hiddenStatesPrev;
         
         std::vector<float> _hiddenActivations;
-        std::vector<float> _hiddenRates;
-        std::vector<float> _feedBackRates;
         
         std::vector<std::vector<std::vector<float>>> _feedForwardWeights;
         std::vector<std::vector<std::vector<float>>> _feedBackWeights;
@@ -192,7 +190,7 @@ namespace eogmaneo {
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.5f), _beta(0.5f), _gamma(0.9f), _codeIters(4), _maxReplaySamples(128), _replayIters(16)
+        : _alpha(0.001f), _beta(0.001f), _gamma(0.95f), _codeIters(4), _maxReplaySamples(128), _replayIters(16)
         {}
 
         /*!
