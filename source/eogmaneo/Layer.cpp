@@ -499,7 +499,7 @@ void Layer::readFromStream(std::istream &is) {
 
             int backwardVecSize = _visibleLayerDescs[v]._backwardRadius * 2 + 1;
 
-            backwardVecSize *= backwardVecSize * _columnSize;
+            backwardVecSize *= backwardVecSize * _columnSize * 2;
 
             for (int x = 0; x < _visibleLayerDescs[v]._width; x++)
                 for (int y = 0; y < _visibleLayerDescs[v]._height; y++)         
