@@ -225,15 +225,15 @@ void Layer::columnBackward(int ci, int v) {
                 int hiddenIndex = _hiddenStates[hiddenColumnIndex];
                 int hiddenIndexPrev = _hiddenStatesPrev[hiddenColumnIndex];
                 
-                int wiCur = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndex * backwardSize;
-                int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize;
+                int wiCur = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndex * backwardSize + backwardVecSize;
+                int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize + backwardVecSize;
 
                 // Output cells
                 for (int c = 0; c < visibleColumnSize; c++) {
                     int visibleCellIndex = ci + c * visibleWidth * visibleHeight;
         
-                    columnActivations[c] += _feedBackWeights[v][visibleCellIndex][wiCur + backwardVecSize];
-                    columnActivationsPrev[c] += _feedBackWeights[v][visibleCellIndex][wiPrev + backwardVecSize];
+                    columnActivations[c] += _feedBackWeights[v][visibleCellIndex][wiCur];
+                    columnActivationsPrev[c] += _feedBackWeights[v][visibleCellIndex][wiPrev];
                 }
             }
         }
@@ -280,13 +280,13 @@ void Layer::columnBackward(int ci, int v) {
 
                     int hiddenIndexPrev = _hiddenStatesPrev[hiddenColumnIndex];
                     
-                    int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize;
+                    int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize + backwardVecSize;
 
                     // Output cells
                     for (int c = 0; c < visibleColumnSize; c++) {
                         int visibleCellIndex = ci + c * visibleWidth * visibleHeight;
 
-                        _feedBackWeights[v][visibleCellIndex][wiPrev + backwardVecSize] += deltas[c];
+                        _feedBackWeights[v][visibleCellIndex][wiPrev] += deltas[c];
                     }
                 }
             }
