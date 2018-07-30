@@ -39,6 +39,8 @@ void Layer::columnForward(int ci) {
 
     std::vector<float> columnActivations(_columnSize, 0.0f);
 
+    float rate = _alpha / (1.0f + _hiddenRates[hiddenCellIndexPrev]);
+
     // Activate feed forward
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         float toInputX = static_cast<float>(_visibleLayerDescs[v]._width) / static_cast<float>(_hiddenWidth);
@@ -78,7 +80,7 @@ void Layer::columnForward(int ci) {
 
                             float target = (c == inputIndexPrev ? 1.0f : 0.0f);
 
-                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + _alpha * (target - recon));
+                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + rate * (target - recon));
                         }
                     }
 
@@ -108,6 +110,9 @@ void Layer::columnForward(int ci) {
                 }
             }
     }
+
+    if (_codeIter == 0)
+        _hiddenRates[hiddenCellIndexPrev] = std::min(99999.0f, _hiddenRates[hiddenCellIndexPrev] + 1.0f);
 
 	// Find max element
 	int maxCellIndex = 0;
@@ -407,6 +412,8 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
         }
     }
 
+    _hiddenRates = _hiddenActivations;
+
     _feedBack = _hiddenStatesPrev = _hiddenStates;
 
     _predictions = _inputsPrev = _inputs;
@@ -530,6 +537,9 @@ void Layer::readFromStream(std::istream &is) {
         _feedBack.clear();
 
     _hiddenActivations.resize(_hiddenStates.size() * _columnSize);
+    _hiddenRates.resize(_hiddenActivations.size());
+
+    is.read(reinterpret_cast<char*>(_hiddenRates.data()), _hiddenRates.size() * sizeof(float));
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
@@ -641,6 +651,8 @@ void Layer::writeToStream(std::ostream &os) {
         writeFeedBack.resize(_hiddenStates.size(), -1);
 
     os.write(reinterpret_cast<char*>(writeFeedBack.data()), writeFeedBack.size() * sizeof(int));
+
+    os.write(reinterpret_cast<char*>(_hiddenActivations.data()), _hiddenActivations.size() * sizeof(float));
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
