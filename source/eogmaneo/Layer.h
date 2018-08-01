@@ -104,7 +104,7 @@ namespace eogmaneo {
     struct ReplaySample {
         std::vector<int> _hiddenStates;
         std::vector<int> _feedBack;
-        std::vector<std::vector<int> > _predictionsPrev;
+        std::vector<std::vector<int> > _inputs;
         float _reward;
     };
 
@@ -172,11 +172,6 @@ namespace eogmaneo {
         float _gamma;
 
         /*!
-        \brief Exploration rate.
-        */
-        float _epsilon;
-
-        /*!
         \brief Sparse coding iterations.
         */
         int _codeIters;
@@ -195,7 +190,7 @@ namespace eogmaneo {
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.01f), _beta(0.001f), _gamma(0.9f), _epsilon(0.01f), _codeIters(4), _maxReplaySamples(256), _replayIters(32)
+        : _alpha(0.01f), _beta(0.001f), _gamma(0.99f), _codeIters(4), _maxReplaySamples(128), _replayIters(32)
         {}
 
         /*!
