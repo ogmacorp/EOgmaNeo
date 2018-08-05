@@ -250,24 +250,10 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
     _predictions[v][ci] = predIndex;
 
+    float q = _reward + _gamma * columnActivations[_predictions[v][ci]];
+
     if (_replaySamples.size() > 2 && _learn) {
-        std::uniform_int_distribution<int> sampleDist(0, _replaySamples.size() - 2);
-
-        std::vector<float> qTargets(_replaySamples.size() - 1);
-
-        float nextQ = columnActivations[_predictions[v][ci]];
-
         for (int t = 0; t < _replaySamples.size() - 1; t++) {
-            const ReplaySample &s = _replaySamples[t];
-            
-            qTargets[t] = s._reward + _gamma * nextQ;
-
-            nextQ = qTargets[t];
-        }
-
-        for (int it = 0; it < _replayIters; it++) {
-            int t = sampleDist(rng);
-
             const ReplaySample &s = _replaySamples[t];
             const ReplaySample &sPrev = _replaySamples[t + 1];
             
@@ -306,7 +292,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             sColumnActivationPrev *= rescale;
 
             // Learn
-            float update = _beta * (qTargets[t] - sColumnActivationPrev);
+            float update = _beta * std::pow(_gamma, t) * (q - sColumnActivationPrev);
             
             for (int dcx = -backwardRadius; dcx <= backwardRadius; dcx++)
                 for (int dcy = -backwardRadius; dcy <= backwardRadius; dcy++) {
@@ -448,12 +434,13 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
 
     _learn = learn;
 
+    _reward = reward;
+
     // Add replay sample
     ReplaySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
     s._inputs = _inputs;
-    s._reward = reward;
 
     _replaySamples.insert(_replaySamples.begin(), s);
 
@@ -493,7 +480,6 @@ void Layer::readFromStream(std::istream &is) {
     is.read(reinterpret_cast<char*>(&_gamma), sizeof(float));
     is.read(reinterpret_cast<char*>(&_codeIters), sizeof(int));
     is.read(reinterpret_cast<char*>(&_maxReplaySamples), sizeof(int));
-    is.read(reinterpret_cast<char*>(&_replayIters), sizeof(int));
 
     int numVisibleLayerDescs;
 
@@ -601,8 +587,6 @@ void Layer::readFromStream(std::istream &is) {
 
             is.read(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
         }
-
-        is.read(reinterpret_cast<char*>(&s._reward), sizeof(float));
     }
 }
 
@@ -618,7 +602,6 @@ void Layer::writeToStream(std::ostream &os) {
     os.write(reinterpret_cast<char*>(&_gamma), sizeof(float));
     os.write(reinterpret_cast<char*>(&_codeIters), sizeof(int));
     os.write(reinterpret_cast<char*>(&_maxReplaySamples), sizeof(int));
-    os.write(reinterpret_cast<char*>(&_replayIters), sizeof(int));
 
     int numVisibleLayerDescs = _visibleLayerDescs.size();
 
@@ -684,7 +667,5 @@ void Layer::writeToStream(std::ostream &os) {
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++)
             os.write(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
-
-        os.write(reinterpret_cast<char*>(&s._reward), sizeof(float));
     }
 }

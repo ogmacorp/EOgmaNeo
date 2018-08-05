@@ -105,7 +105,6 @@ namespace eogmaneo {
         std::vector<int> _hiddenStates;
         std::vector<int> _feedBack;
         std::vector<std::vector<int> > _inputs;
-        float _reward;
     };
 
     /*!
@@ -143,6 +142,8 @@ namespace eogmaneo {
         bool _learn;
 
         int _codeIter;
+
+        float _reward;
         
         std::vector<ReplaySample> _replaySamples;
   
@@ -182,15 +183,10 @@ namespace eogmaneo {
         int _maxReplaySamples;
 
         /*!
-        \brief Number of replay iterations.
-        */
-        int _replayIters;
-
-        /*!
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.01f), _beta(0.001f), _gamma(0.99f), _codeIters(4), _maxReplaySamples(128), _replayIters(32)
+        : _alpha(0.01f), _beta(0.001f), _gamma(0.99f), _codeIters(4), _maxReplaySamples(128)
         {}
 
         /*!
