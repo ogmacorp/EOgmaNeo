@@ -93,6 +93,9 @@ const std::vector<int> &ImageEncoder::activate(ComputeSystem &cs, const std::vec
 const std::vector<float> &ImageEncoder::reconstruct(ComputeSystem &cs, const std::vector<int> &reconHiddenStates) {
     _reconHiddenStates = reconHiddenStates;
     
+    _recons = std::vector<float>(_inputs.size(), 0.0f);
+    _counts = _recons;
+
     for (int cx = 0; cx < _hiddenWidth; cx++)
         for (int cy = 0; cy < _hiddenHeight; cy++) {
             std::shared_ptr<ImageEncoderReconstructWorkItem> item = std::make_shared<ImageEncoderReconstructWorkItem>();
@@ -259,7 +262,7 @@ void ImageEncoder::learn(int cx, int cy, float _alpha, float beta) {
                 int wi = index + weightsPerUnit * ui;
                 int ii = vx + vy * _inputWidth;
 
-                _weightsR[wi] += _alpha * (_inputs[ii] - _recons[ii]);
+                _weightsR[wi] += beta * (_inputs[ii] - _recons[ii]);
             }
         }
 }
