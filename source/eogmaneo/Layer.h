@@ -99,12 +99,13 @@ namespace eogmaneo {
 	};
 
     /*!
-    \brief Replay sample.
+    \brief History sample.
     */
-    struct ReplaySample {
+    struct HistorySample {
         std::vector<int> _hiddenStates;
         std::vector<int> _feedBack;
         std::vector<std::vector<int> > _inputs;
+        float _reward;
     };
 
     /*!
@@ -142,10 +143,8 @@ namespace eogmaneo {
         bool _learn;
 
         int _codeIter;
-
-        float _reward;
         
-        std::vector<ReplaySample> _replaySamples;
+        std::vector<HistorySample> _historySamples;
   
         void columnForward(int ci);
         void columnBackward(int ci, int v, std::mt19937 &rng);
@@ -178,15 +177,15 @@ namespace eogmaneo {
         int _codeIters;
 
         /*!
-        \brief Maximum number of replay samples.
+        \brief Maximum number of history samples.
         */
-        int _maxReplaySamples;
+        int _valueHorizon;
 
         /*!
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.01f), _beta(0.01f), _gamma(0.9f), _codeIters(4), _maxReplaySamples(32)
+        : _alpha(0.01f), _beta(0.01f), _gamma(0.99f), _codeIters(4), _valueHorizon(32)
         {}
 
         /*!
