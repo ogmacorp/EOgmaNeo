@@ -105,7 +105,6 @@ namespace eogmaneo {
         std::vector<int> _hiddenStates;
         std::vector<int> _feedBack;
         std::vector<std::vector<int> > _inputs;
-        float _reward;
     };
 
     /*!
@@ -143,6 +142,8 @@ namespace eogmaneo {
         bool _learn;
 
         int _codeIter;
+
+        float _reward;
         
         std::vector<ReplaySample> _replaySamples;
   
