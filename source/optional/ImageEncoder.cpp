@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <assert.h>
 
 using namespace eogmaneo;
 
@@ -19,8 +20,12 @@ void ImageEncoderActivateWorkItem::run(size_t threadIndex) {
 	_pEncoder->activate(_cx, _cy);
 }
 
+void ImageEncoderReconstructWorkItem::run(size_t threadIndex) {
+	_pEncoder->reconstruct(_cx, _cy);
+}
+
 void ImageEncoderLearnWorkItem::run(size_t threadIndex) {
-    _pEncoder->learn(_cx, _cy, _beta);
+    _pEncoder->learn(_cx, _cy, _alpha, _beta);
 }
 
 void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int hiddenHeight, int columnSize, int radius,
@@ -38,7 +43,8 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
     _radius = radius;
 
-    std::uniform_real_distribution<float> weightDist(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> weightDistHigh(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> weightDistLow(-0.01f, 0.01f);
 
     int diam = _radius * 2 + 1;
 
@@ -46,16 +52,23 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 
 	int units = _hiddenWidth * _hiddenHeight * _columnSize;
 
-    _weights.resize(units * weightsPerUnit);
+    _weightsFF.resize(units * weightsPerUnit);
+    _weightsR.resize(_weightsFF.size());
 
-    for (int w = 0; w < _weights.size(); w++) {
-        _weights[w] = weightDist(rng);
+    for (int w = 0; w < _weightsFF.size(); w++) {
+        _weightsFF[w] = weightDistHigh(rng);
+        _weightsR[w] = weightDistLow(rng);
     }
 
     _biases.resize(units, 0.0f);
 
     _hiddenStates.resize(_hiddenWidth * _hiddenHeight, 0);
     _hiddenActivations.resize(units, 0.0f);
+
+    _reconHiddenStates = _hiddenStates;
+
+    _recons.resize(_inputWidth * _inputHeight, 0.0f);
+    _counts = _recons;
 }
 
 const std::vector<int> &ImageEncoder::activate(ComputeSystem &cs, const std::vector<float> &inputs) {
@@ -77,7 +90,36 @@ const std::vector<int> &ImageEncoder::activate(ComputeSystem &cs, const std::vec
     return _hiddenStates;
 }
 
-void ImageEncoder::learn(ComputeSystem &cs, float beta) {
+const std::vector<float> &ImageEncoder::reconstruct(ComputeSystem &cs, const std::vector<int> &reconHiddenStates) {
+    _reconHiddenStates = reconHiddenStates;
+    
+    _recons = std::vector<float>(_inputs.size(), 0.0f);
+    _counts = _recons;
+
+    for (int cx = 0; cx < _hiddenWidth; cx++)
+        for (int cy = 0; cy < _hiddenHeight; cy++) {
+            std::shared_ptr<ImageEncoderReconstructWorkItem> item = std::make_shared<ImageEncoderReconstructWorkItem>();
+
+            item->_pEncoder = this;
+            item->_cx = cx;
+            item->_cy = cy;
+            
+            cs._pool.addItem(item);
+        }
+        
+    cs._pool.wait();
+
+    // Rescale
+    for (int i = 0; i < _recons.size(); i++)
+        _recons[i] /= _counts[i];
+
+    return _recons;
+}
+
+void ImageEncoder::learn(ComputeSystem &cs, float alpha, float beta) {
+    // Must have called reconstruct prior to this
+    assert(!_reconHiddenStates.empty());
+
     for (int cx = 0; cx < _hiddenWidth; cx++)
         for (int cy = 0; cy < _hiddenHeight; cy++) {
             std::shared_ptr<ImageEncoderLearnWorkItem> item = std::make_shared<ImageEncoderLearnWorkItem>();
@@ -85,6 +127,7 @@ void ImageEncoder::learn(ComputeSystem &cs, float beta) {
             item->_pEncoder = this;
             item->_cx = cx;
             item->_cy = cy;
+            item->_alpha = alpha;
             item->_beta = beta;
 
             cs._pool.addItem(item);
@@ -127,7 +170,7 @@ void ImageEncoder::activate(int cx, int cy) {
                     int wi = index + weightsPerUnit * ui;
                     int ii = vx + vy * _inputWidth;
 
-                    value += _inputs[ii] * _weights[wi];
+                    value += _inputs[ii] * _weightsFF[wi];
                 }
             }
 
@@ -142,10 +185,84 @@ void ImageEncoder::activate(int cx, int cy) {
 	_hiddenStates[cx + cy * _hiddenWidth] = maxCellIndex;
 }
 
-void ImageEncoder::learn(int cx, int cy, float beta) {
+void ImageEncoder::reconstruct(int cx, int cy) {
+    int diam = _radius * 2 + 1;
+    int weightsPerUnit = diam * diam;
+
+    int maxCellIndex = 0;
+    float maxValue = -99999.0f;
+
+    // Projection
+    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(_hiddenWidth);
+    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(_hiddenHeight);
+
+    int centerX = cx * toInputX + 0.5f;
+    int centerY = cy * toInputY + 0.5f;
+
+    int lowerX = centerX - _radius;
+    int lowerY = centerY - _radius;
+
+    int c = _reconHiddenStates[cx + cy * _hiddenWidth];
+
+    int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
+
+    for (int sx = 0; sx < diam; sx++)
+        for (int sy = 0; sy < diam; sy++) {
+            int index = sx + sy * diam;
+            
+            int vx = lowerX + sx;
+            int vy = lowerY + sy;
+
+            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                int wi = index + weightsPerUnit * ui;
+                int ii = vx + vy * _inputWidth;
+
+                _recons[ii] += _weightsR[wi];
+                _counts[ii] += 1.0f;
+            }
+        }
+}
+
+void ImageEncoder::learn(int cx, int cy, float _alpha, float beta) {
     for (int c = 0; c < _columnSize; c++) {
         int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
         _biases[ui] += -beta * _hiddenActivations[ui];
     }
+
+    int diam = _radius * 2 + 1;
+    int weightsPerUnit = diam * diam;
+
+    int maxCellIndex = 0;
+    float maxValue = -99999.0f;
+
+    // Projection
+    float toInputX = static_cast<float>(_inputWidth) / static_cast<float>(_hiddenWidth);
+    float toInputY = static_cast<float>(_inputHeight) / static_cast<float>(_hiddenHeight);
+
+    int centerX = cx * toInputX + 0.5f;
+    int centerY = cy * toInputY + 0.5f;
+
+    int lowerX = centerX - _radius;
+    int lowerY = centerY - _radius;
+
+    int c = _hiddenStates[cx + cy * _hiddenWidth];
+
+    int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
+
+    // Compute value
+    for (int sx = 0; sx < diam; sx++)
+        for (int sy = 0; sy < diam; sy++) {
+            int index = sx + sy * diam;
+
+            int vx = lowerX + sx;
+            int vy = lowerY + sy;
+
+            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                int wi = index + weightsPerUnit * ui;
+                int ii = vx + vy * _inputWidth;
+
+                _weightsR[wi] += beta * (_inputs[ii] - _recons[ii]);
+            }
+        }
 }
