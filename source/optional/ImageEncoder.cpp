@@ -223,11 +223,11 @@ void ImageEncoder::reconstruct(int cx, int cy) {
         }
 }
 
-void ImageEncoder::learn(int cx, int cy, float _alpha, float beta) {
+void ImageEncoder::learn(int cx, int cy, float alpha, float beta) {
     for (int c = 0; c < _columnSize; c++) {
         int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
-        _biases[ui] += -beta * _hiddenActivations[ui];
+        _biases[ui] += -alpha * _hiddenActivations[ui];
     }
 
     int diam = _radius * 2 + 1;
