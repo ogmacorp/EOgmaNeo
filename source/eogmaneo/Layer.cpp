@@ -250,10 +250,10 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
     float q = _reward + _gamma * columnActivations[_predictions[v][ci]];
 
-    if (_replaySamples.size() > 2 && _learn) {
-        for (int t = 0; t < _replaySamples.size() - 1; t++) {
-            const ReplaySample &s = _replaySamples[t];
-            const ReplaySample &sPrev = _replaySamples[t + 1];
+    if (_historySamples.size() > 2 && _learn) {
+        for (int t = 0; t < _historySamples.size() - 1; t++) {
+            const HistorySample &s = _historySamples[t];
+            const HistorySample &sPrev = _historySamples[t + 1];
 
             float sColumnActivationPrev = 0.0f;
 
@@ -434,16 +434,16 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
 
     _reward = reward;
 
-    // Add replay sample
-    ReplaySample s;
+    // Add history sample
+    HistorySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
     s._inputs = _inputs;
 
-    _replaySamples.insert(_replaySamples.begin(), s);
+    _historySamples.insert(_historySamples.begin(), s);
 
-    if (_replaySamples.size() > _maxReplaySamples)
-        _replaySamples.resize(_maxReplaySamples);
+    if (_historySamples.size() > _maxHistorySamples)
+        _historySamples.resize(_maxHistorySamples);
 
     std::uniform_int_distribution<int> seedDist(0, 99999);
 
@@ -477,7 +477,7 @@ void Layer::readFromStream(std::istream &is) {
     is.read(reinterpret_cast<char*>(&_beta), sizeof(float));
     is.read(reinterpret_cast<char*>(&_gamma), sizeof(float));
     is.read(reinterpret_cast<char*>(&_codeIters), sizeof(int));
-    is.read(reinterpret_cast<char*>(&_maxReplaySamples), sizeof(int));
+    is.read(reinterpret_cast<char*>(&_maxHistorySamples), sizeof(int));
 
     int numVisibleLayerDescs;
 
@@ -556,16 +556,16 @@ void Layer::readFromStream(std::istream &is) {
         }
     }
 
-    // Load replay samples
+    // Load history samples
     int numSamples;
 
     is.read(reinterpret_cast<char*>(&numSamples), sizeof(int));
 
-    _replaySamples.resize(numSamples);
+    _historySamples.resize(numSamples);
 
     // Write samples
-    for (int t = 0; t < _replaySamples.size(); t++) {
-        ReplaySample &s = _replaySamples[t];
+    for (int t = 0; t < _historySamples.size(); t++) {
+        HistorySample &s = _historySamples[t];
 
         s._hiddenStates.resize(_hiddenStates.size());
         
@@ -599,7 +599,7 @@ void Layer::writeToStream(std::ostream &os) {
     os.write(reinterpret_cast<char*>(&_beta), sizeof(float));
     os.write(reinterpret_cast<char*>(&_gamma), sizeof(float));
     os.write(reinterpret_cast<char*>(&_codeIters), sizeof(int));
-    os.write(reinterpret_cast<char*>(&_maxReplaySamples), sizeof(int));
+    os.write(reinterpret_cast<char*>(&_maxHistorySamples), sizeof(int));
 
     int numVisibleLayerDescs = _visibleLayerDescs.size();
 
@@ -645,14 +645,14 @@ void Layer::writeToStream(std::ostream &os) {
         }
     }
 
-    // Save replay samples
-    int numSamples = _replaySamples.size();
+    // Save history samples
+    int numSamples = _historySamples.size();
 
     os.write(reinterpret_cast<char*>(&numSamples), sizeof(int));
 
     // Write samples
-    for (int t = 0; t < _replaySamples.size(); t++) {
-        ReplaySample &s = _replaySamples[t];
+    for (int t = 0; t < _historySamples.size(); t++) {
+        HistorySample &s = _historySamples[t];
 
         os.write(reinterpret_cast<char*>(s._hiddenStates.data()), s._hiddenStates.size() * sizeof(int));
     
