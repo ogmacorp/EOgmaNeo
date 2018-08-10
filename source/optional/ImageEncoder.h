@@ -86,7 +86,7 @@ namespace eogmaneo {
 
 		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);
-        void learn(int cx, int cy, float _alpha, float beta);
+        void learn(int cx, int cy, float alpha, float beta);
 
 		std::vector<float> _inputs;
 		std::vector<float> _recons;
