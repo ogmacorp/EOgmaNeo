@@ -246,7 +246,15 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             predIndex = c;
     }
 
-    _predictions[v][ci] = predIndex;
+    std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
+
+    if (dist01(rng) < _epsilon) {
+        std::uniform_int_distribution<int> columnDist(0, visibleColumnSize - 1);
+
+        _predictions[v][ci] = columnDist(rng);
+    }
+    else
+        _predictions[v][ci] = predIndex;
 
     if (_historySamples.size() == _valueHorizon && _learn) {
         // Reward sum
@@ -265,7 +273,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
         float sColumnActivationPrev = 0.0f;
 
-        int updateIndex = s._inputs[v][ci];
+        int updateIndex = s._predictionsPrev[v][ci];
 
         int visibleCellIndexUpdate = ci + updateIndex * visibleWidth * visibleHeight;
 
@@ -439,7 +447,7 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
     HistorySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
-    s._inputs = _inputs;
+    s._predictionsPrev = _predictions;
     s._reward = reward;
 
     _historySamples.insert(_historySamples.begin(), s);
@@ -580,12 +588,12 @@ void Layer::readFromStream(std::istream &is) {
         if (s._feedBack.front() == -1)
             s._feedBack.clear();
 
-        s._inputs.resize(_visibleLayerDescs.size());
+        s._predictionsPrev.resize(_visibleLayerDescs.size());
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++) {
-            s._inputs[v].resize(_inputs[v].size());
+            s._predictionsPrev[v].resize(_inputs[v].size());
 
-            is.read(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
+            is.read(reinterpret_cast<char*>(s._predictionsPrev[v].data()), s._predictionsPrev[v].size() * sizeof(int));
         }
 
         is.read(reinterpret_cast<char*>(&s._reward), sizeof(float));
@@ -668,7 +676,7 @@ void Layer::writeToStream(std::ostream &os) {
         os.write(reinterpret_cast<char*>(writeFeedBack.data()), writeFeedBack.size() * sizeof(int));
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++)
-            os.write(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
+            os.write(reinterpret_cast<char*>(s._predictionsPrev[v].data()), s._predictionsPrev[v].size() * sizeof(int));
 
         os.write(reinterpret_cast<char*>(&s._reward), sizeof(float));
     }
