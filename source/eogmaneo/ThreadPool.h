@@ -34,7 +34,7 @@ namespace eogmaneo {
 		/*!
 		\brief Override function to be run.
 		*/
-		virtual void run(size_t threadIndex) = 0;
+		virtual void run() = 0;
 
 		/*!
 		\brief Whether the done flag has been set (for task completion).
@@ -58,7 +58,7 @@ namespace eogmaneo {
 		std::shared_ptr<std::thread> _thread;
 		std::condition_variable _conditionVariable;
 
-		std::atomic_bool _proceed;
+		bool _proceed;
 
 		std::shared_ptr<class WorkItem> _item;
 
@@ -66,13 +66,11 @@ namespace eogmaneo {
 		size_t _workerIndex;
 
 		WorkerThread()
-			: _pPool(nullptr), _workerIndex(0)
-		{
-			_proceed = false;
-		}
+			: _pPool(nullptr), _workerIndex(0), _proceed(false)
+		{}
 
 		void start() {
-			_thread.reset(new std::thread(&WorkerThread::run, this));
+			_thread = std::make_shared<std::thread>(&WorkerThread::run, this);
 		}
 
 		static void run(WorkerThread* pWorker);
@@ -92,8 +90,6 @@ namespace eogmaneo {
 		std::list<size_t> _availableThreadIndicies;
 
 		std::list<std::shared_ptr<class WorkItem>> _itemQueue;
-
-		void onWorkerAvailable(size_t workerIndex);
 
 	public:
 		~ThreadPool() {
@@ -116,13 +112,6 @@ namespace eogmaneo {
 		\param item the work item to be enqueued.
 		*/
 		void addItem(const std::shared_ptr<class WorkItem> &item);
-
-		/*!
-		\brief Get number of currently unused worker threads.
-		*/
-		bool workersAvailable() const {
-			return !_availableThreadIndicies.empty();
-		}
 
 		/*!
 		\brief Get total number of worker threads.
