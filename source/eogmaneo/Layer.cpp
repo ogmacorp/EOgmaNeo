@@ -21,11 +21,11 @@ float eogmaneo::sigmoid(float x) {
     return 1.0f / (1.0f + std::exp(-x));
 }
 
-void LayerForwardWorkItem::run(size_t threadIndex) {
+void LayerForwardWorkItem::run() {
 	_pLayer->columnForward(_ci);
 }
 
-void LayerBackwardWorkItem::run(size_t threadIndex) {
+void LayerBackwardWorkItem::run() {
 	_pLayer->columnBackward(_ci, _v, _rng);
 }
 

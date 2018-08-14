@@ -28,7 +28,7 @@ namespace eogmaneo {
 			: _pEncoder(nullptr)
 		{}
 
-		void run(size_t threadIndex) override;
+		void run() override;
 	};
 	
     /*!
@@ -44,7 +44,7 @@ namespace eogmaneo {
 			: _pEncoder(nullptr)
 		{}
 
-		void run(size_t threadIndex) override;
+		void run() override;
 	};
 
     /*!
@@ -62,7 +62,7 @@ namespace eogmaneo {
             : _pEncoder(nullptr)
         {}
 
-        void run(size_t threadIndex) override;
+        void run() override;
     };
 	
     /*!

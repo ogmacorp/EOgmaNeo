@@ -16,15 +16,15 @@
 
 using namespace eogmaneo;
 
-void ImageEncoderActivateWorkItem::run(size_t threadIndex) {
+void ImageEncoderActivateWorkItem::run() {
 	_pEncoder->activate(_cx, _cy);
 }
 
-void ImageEncoderReconstructWorkItem::run(size_t threadIndex) {
+void ImageEncoderReconstructWorkItem::run() {
 	_pEncoder->reconstruct(_cx, _cy);
 }
 
-void ImageEncoderLearnWorkItem::run(size_t threadIndex) {
+void ImageEncoderLearnWorkItem::run() {
     _pEncoder->learn(_cx, _cy, _alpha, _beta);
 }
 
