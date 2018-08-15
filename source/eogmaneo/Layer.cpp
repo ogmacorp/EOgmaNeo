@@ -319,16 +319,12 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
                         // Output cells
                         int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + feedBackIndexPrev * backwardSize;
 
-                        int feedBackCellIndexPrev = ci + feedBackIndexPrev * _hiddenWidth * _hiddenHeight;
-
                         _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                     }
 
                     int hiddenIndexPrev = sPrev._hiddenStates[hiddenColumnIndex];
 
                     int wiPrev = (cx - lowerHiddenX) + (cy - lowerHiddenY) * backwardDiam + hiddenIndexPrev * backwardSize + backwardVecSize;
-
-                    int hiddenCellIndexPrev = ci + hiddenIndexPrev * _hiddenWidth * _hiddenHeight;
 
                     _feedBackWeights[v][visibleCellIndexUpdate][wiPrev] += update;
                 }
