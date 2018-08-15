@@ -483,6 +483,7 @@ void Layer::readFromStream(std::istream &is) {
     is.read(reinterpret_cast<char*>(&_alpha), sizeof(float));
     is.read(reinterpret_cast<char*>(&_beta), sizeof(float));
     is.read(reinterpret_cast<char*>(&_gamma), sizeof(float));
+    is.read(reinterpret_cast<char*>(&_epsilon), sizeof(float));
     is.read(reinterpret_cast<char*>(&_codeIters), sizeof(int));
     is.read(reinterpret_cast<char*>(&_maxHistorySamples), sizeof(int));
 
@@ -607,6 +608,7 @@ void Layer::writeToStream(std::ostream &os) {
     os.write(reinterpret_cast<char*>(&_alpha), sizeof(float));
     os.write(reinterpret_cast<char*>(&_beta), sizeof(float));
     os.write(reinterpret_cast<char*>(&_gamma), sizeof(float));
+    os.write(reinterpret_cast<char*>(&_epsilon), sizeof(float));
     os.write(reinterpret_cast<char*>(&_codeIters), sizeof(int));
     os.write(reinterpret_cast<char*>(&_maxHistorySamples), sizeof(int));
 
