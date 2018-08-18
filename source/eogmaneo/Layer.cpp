@@ -246,8 +246,6 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             predIndex = c;
     }
 
-    std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
-
     _predictions[v][ci] = predIndex;
 
     if (_historySamples.size() == _maxHistorySamples && _learn) {
@@ -438,7 +436,7 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
     HistorySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
-    s._inputs = _inputs; // Still prev
+    s._inputs = _inputs;
     s._reward = reward;
 
     _historySamples.insert(_historySamples.begin(), s);
