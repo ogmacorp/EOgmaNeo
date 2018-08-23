@@ -291,7 +291,7 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
 
     std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
     std::uniform_real_distribution<float> initWeightDistLow(-0.001f, 0.001f);
-    std::uniform_real_distribution<float> initWeightDistHigh(0.0f, 1.0f);
+    std::uniform_real_distribution<float> initWeightDistHigh(0.99f, 1.0f);
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         _inputs[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height, 0);
@@ -413,6 +413,7 @@ void Layer::readFromStream(std::istream &is) {
     is.read(reinterpret_cast<char*>(&_alpha), sizeof(float));
     is.read(reinterpret_cast<char*>(&_beta), sizeof(float));
     is.read(reinterpret_cast<char*>(&_gamma), sizeof(float));
+    is.read(reinterpret_cast<char*>(&_epsilon), sizeof(float));
     is.read(reinterpret_cast<char*>(&_maxHistorySamples), sizeof(int));
 
     int numVisibleLayerDescs;
@@ -534,6 +535,7 @@ void Layer::writeToStream(std::ostream &os) {
     os.write(reinterpret_cast<char*>(&_alpha), sizeof(float));
     os.write(reinterpret_cast<char*>(&_beta), sizeof(float));
     os.write(reinterpret_cast<char*>(&_gamma), sizeof(float));
+    os.write(reinterpret_cast<char*>(&_epsilon), sizeof(float));
     os.write(reinterpret_cast<char*>(&_maxHistorySamples), sizeof(int));
 
     int numVisibleLayerDescs = _visibleLayerDescs.size();
