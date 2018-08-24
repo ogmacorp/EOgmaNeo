@@ -33,9 +33,7 @@ void Layer::columnForward(int ci) {
     int hiddenColumnX = ci % _hiddenWidth;
     int hiddenColumnY = ci / _hiddenWidth;
 
-    int hiddenStatePrev = _hiddenStatesPrev[ci];
-
-    int hiddenCellIndexPrev = ci + hiddenStatePrev * _hiddenWidth * _hiddenHeight;
+    int hiddenCellIndexPrev = ci + _hiddenStatesPrev[ci] * _hiddenWidth * _hiddenHeight;
 
     std::vector<float> columnActivations(_columnSize, 0.0f);
 
