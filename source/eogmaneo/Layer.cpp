@@ -286,19 +286,13 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
 
         for (int x = 0; x < _hiddenWidth; x++)
             for (int y = 0; y < _hiddenHeight; y++) {
-                // Generate pattern mask
-                std::vector<bool> mask(forwardVecSize);
-
-                for (int j = 0; j < forwardVecSize; j++)
-                    mask[j] = dist01(rng) < 0.5f;
-
                 for (int c = 0; c < _columnSize; c++) {
                     int hiddenCellIndex = x + y * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
                     _feedForwardWeights[v][hiddenCellIndex].resize(forwardVecSize);
                     
                     for (int j = 0; j < forwardVecSize; j++)
-                        _feedForwardWeights[v][hiddenCellIndex][j] = mask[j] ? initWeightDistHigh(rng) : 0.0f;
+                        _feedForwardWeights[v][hiddenCellIndex][j] = dist01(rng) < 0.5f ? initWeightDistHigh(rng) : 0.0f;
                 }
             }
 
