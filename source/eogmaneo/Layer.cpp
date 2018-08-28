@@ -37,6 +37,8 @@ void Layer::columnForward(int ci) {
 
     std::vector<float> columnActivations(_columnSize, 0.0f);
 
+    float rate = _alpha / (1 + _hiddenTouches[hiddenCellIndexPrev]);
+
     // Activate feed forward
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         float toInputX = static_cast<float>(_visibleLayerDescs[v]._width) / static_cast<float>(_hiddenWidth);
@@ -76,7 +78,7 @@ void Layer::columnForward(int ci) {
 
                             float target = (c == inputIndexPrev ? 1.0f : 0.0f);
 
-                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + _alpha * (target - recon));
+                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + rate * (target - recon));
                         }
                     }
 
@@ -106,6 +108,9 @@ void Layer::columnForward(int ci) {
                 }
             }
     }
+
+    if (_codeIter == 0)
+        _hiddenTouches[hiddenCellIndexPrev] = std::min(99999, _hiddenTouches[hiddenCellIndexPrev] + 1);
 
 	// Find max element
 	int maxCellIndex = 0;
@@ -244,7 +249,15 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
             predIndex = c;
     }
 
-    _predictions[v][ci] = predIndex;
+    std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
+
+    if (dist01(rng) < _epsilon) {
+        std::uniform_int_distribution<int> columnDist(0, visibleColumnSize - 1);
+
+        _predictions[v][ci] = columnDist(rng);
+    }
+    else
+        _predictions[v][ci] = predIndex;
 
     if (_historySamples.size() == _maxHistorySamples && _learn) {
         float q = columnActivations[_predictions[v][ci]];
@@ -260,7 +273,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
         float sColumnActivationPrev = 0.0f;
 
-        int updateIndex = s._inputs[v][ci];
+        int updateIndex = s._predictionsPrev[v][ci];
 
         int visibleCellIndexUpdate = ci + updateIndex * visibleWidth * visibleHeight;
 
@@ -340,6 +353,8 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
     
     _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
 
+    _hiddenTouches.resize(_hiddenActivations.size(), 0);
+
     std::uniform_real_distribution<float> initWeightDistLow(-0.0001f, 0.0001f);
     std::uniform_real_distribution<float> initWeightDistHigh(0.99f, 1.0f);
 
@@ -396,18 +411,18 @@ void Layer::forward(ComputeSystem &cs, const std::vector<std::vector<int>> &inpu
 
     _hiddenStatesPrev = _hiddenStates;
 
+    // Clear recons
+    _recons.clear();
+    _recons.resize(_visibleLayerDescs.size());
+
+    for (int v = 0; v < _visibleLayerDescs.size(); v++)
+        _recons[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height * _visibleLayerDescs[v]._columnSize, 0.0f);
+    
+    _reconCounts = _recons;
+
     // Several inhibition iterations
     for (int it = 0; it < _codeIters; it++) {
         _codeIter = it;
-
-        // Clear recons
-        _recons.clear();
-        _recons.resize(_visibleLayerDescs.size());
-
-        for (int v = 0; v < _visibleLayerDescs.size(); v++)
-            _recons[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height * _visibleLayerDescs[v]._columnSize, 0.0f);
-        
-        _reconCounts = _recons;
 
         for (int ci = 0; ci < _hiddenStates.size(); ci++) {
             std::shared_ptr<LayerForwardWorkItem> item = std::make_shared<LayerForwardWorkItem>();
@@ -434,7 +449,7 @@ void Layer::backward(ComputeSystem &cs, const std::vector<int> &feedBack, float 
     HistorySample s;
     s._hiddenStates = _hiddenStates;
     s._feedBack = _feedBack;
-    s._inputs = _inputs;
+    s._predictionsPrev = _predictions; // Still prev
     s._reward = reward;
 
     _historySamples.insert(_historySamples.begin(), s);
@@ -506,6 +521,10 @@ void Layer::readFromStream(std::istream &is) {
 
     _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
 
+    _hiddenTouches.resize(_hiddenActivations.size());
+
+    is.read(reinterpret_cast<char*>(_hiddenTouches.data()), _hiddenTouches.size() * sizeof(int));
+
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
         _inputs[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height);
@@ -575,12 +594,12 @@ void Layer::readFromStream(std::istream &is) {
         if (s._feedBack.front() == -1)
             s._feedBack.clear();
 
-        s._inputs.resize(_visibleLayerDescs.size());
+        s._predictionsPrev.resize(_visibleLayerDescs.size());
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++) {
-            s._inputs[v].resize(_inputs[v].size());
+            s._predictionsPrev[v].resize(_inputs[v].size());
 
-            is.read(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
+            is.read(reinterpret_cast<char*>(s._predictionsPrev[v].data()), s._predictionsPrev[v].size() * sizeof(int));
         }
         
         is.read(reinterpret_cast<char*>(&s._reward), sizeof(float));
@@ -616,6 +635,8 @@ void Layer::writeToStream(std::ostream &os) {
         writeFeedBack.resize(_hiddenStates.size(), -1);
 
     os.write(reinterpret_cast<char*>(writeFeedBack.data()), writeFeedBack.size() * sizeof(int));
+
+    os.write(reinterpret_cast<char*>(_hiddenTouches.data()), _hiddenTouches.size() * sizeof(int));
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
@@ -663,7 +684,7 @@ void Layer::writeToStream(std::ostream &os) {
         os.write(reinterpret_cast<char*>(writeFeedBack.data()), writeFeedBack.size() * sizeof(int));
 
         for (int v = 0; v < _visibleLayerDescs.size(); v++)
-            os.write(reinterpret_cast<char*>(s._inputs[v].data()), s._inputs[v].size() * sizeof(int));
+            os.write(reinterpret_cast<char*>(s._predictionsPrev[v].data()), s._predictionsPrev[v].size() * sizeof(int));
 
         
         os.write(reinterpret_cast<char*>(&s._reward), sizeof(float));

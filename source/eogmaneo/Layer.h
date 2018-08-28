@@ -104,7 +104,7 @@ namespace eogmaneo {
     struct HistorySample {
         std::vector<int> _hiddenStates;
         std::vector<int> _feedBack;
-        std::vector<std::vector<int> > _inputs;
+        std::vector<std::vector<int> > _predictionsPrev;
         float _reward;
     };
 
@@ -121,6 +121,8 @@ namespace eogmaneo {
         std::vector<int> _hiddenStatesPrev;
         
         std::vector<float> _hiddenActivations;
+
+        std::vector<int> _hiddenTouches;
         
         std::vector<std::vector<std::vector<float>>> _feedForwardWeights;
         std::vector<std::vector<std::vector<float>>> _feedBackWeights;
@@ -172,6 +174,11 @@ namespace eogmaneo {
         float _gamma;
 
         /*!
+        \brief Exploration rate.
+        */
+        float _epsilon;
+
+        /*!
         \brief Sparse coding iterations.
         */
         int _codeIters;
@@ -185,7 +192,7 @@ namespace eogmaneo {
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.01f), _beta(0.01f), _gamma(0.99f), _codeIters(4), _maxHistorySamples(16)
+        : _alpha(1.0f), _beta(0.01f), _gamma(0.99f), _epsilon(0.01f), _codeIters(4), _maxHistorySamples(8)
         {}
 
         /*!
