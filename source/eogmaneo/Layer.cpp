@@ -100,7 +100,7 @@ void Layer::columnForward(int ci) {
                         for (int c = 0; c < _columnSize; c++) {
                             int hiddenCellIndex = ci + c * _hiddenWidth * _hiddenHeight;
                             
-                            columnActivations[c] += _feedForwardWeights[v][hiddenCellIndex][wi] * (1.0f - recon);
+                            columnActivations[c] += std::max(0.0f, _feedForwardWeights[v][hiddenCellIndex][wi] - recon);
                         }
                     }
                 }
@@ -115,9 +115,9 @@ void Layer::columnForward(int ci) {
         int hiddenCellIndex = ci + c * _hiddenWidth * _hiddenHeight;
 
         if (_codeIter == 0)
-            _hiddenActivations[hiddenCellIndex] = sigmoid(columnActivations[c]);
+            _hiddenActivations[hiddenCellIndex] = columnActivations[c];
         else
-            _hiddenActivations[hiddenCellIndex] *= sigmoid(columnActivations[c]);
+            _hiddenActivations[hiddenCellIndex] += columnActivations[c];
 
 		if (_hiddenActivations[hiddenCellIndex] > maxValue) {
             maxValue = _hiddenActivations[hiddenCellIndex];
