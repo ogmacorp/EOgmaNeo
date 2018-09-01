@@ -100,7 +100,7 @@ void Layer::columnForward(int ci) {
                         for (int c = 0; c < _columnSize; c++) {
                             int hiddenCellIndex = ci + c * _hiddenWidth * _hiddenHeight;
                             
-                            columnActivations[c] += _feedForwardWeights[v][hiddenCellIndex][wi] * (1.0f - recon);
+                            columnActivations[c] += std::max(0.0f, _feedForwardWeights[v][hiddenCellIndex][wi] * (1.0f - recon));
                         }
                     }
                 }
@@ -255,7 +255,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
         _predictions[v][ci] = predIndex;
 
     if (_historySamples.size() == _maxHistorySamples && _learn) {
-        float q = 0.0f;//columnActivations[_predictions[v][ci]];
+        float q = columnActivations[_predictions[v][ci]];
 
         for (int t = 0; t < _historySamples.size() - 1; t++) {
             const HistorySample &s = _historySamples[t];            
