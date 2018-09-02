@@ -72,11 +72,11 @@ void Layer::columnForward(int ci) {
 
                             int visibleCellIndex = visibleColumnIndex + c * _visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height;
 
-                            float recon = sigmoid(_reconsActLearn[v][visibleCellIndex] / std::max(1.0f, _reconCountsActLearn[v][visibleCellIndex]));
+                            float recon = _reconsActLearn[v][visibleCellIndex] / std::max(1.0f, _reconCountsActLearn[v][visibleCellIndex]);
 
                             float target = (c == inputIndexPrev ? 1.0f : 0.0f);
 
-                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] += _alpha * (target - recon);
+                            _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + _alpha * (target - recon));
                         }
                     }
 
@@ -95,12 +95,12 @@ void Layer::columnForward(int ci) {
 
                         int visibleCellIndex = visibleColumnIndex + inputIndex * _visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height;
 
-                        float recon = sigmoid(_reconsActLearn[v][visibleCellIndex] / std::max(1.0f, _reconCountsActLearn[v][visibleCellIndex]));
+                        float recon = _reconsActLearn[v][visibleCellIndex] / std::max(1.0f, _reconCountsActLearn[v][visibleCellIndex]);
 
                         for (int c = 0; c < _columnSize; c++) {
                             int hiddenCellIndex = ci + c * _hiddenWidth * _hiddenHeight;
                             
-                            columnActivations[c] += _feedForwardWeights[v][hiddenCellIndex][wi] * (1.0f - recon);
+                            columnActivations[c] += std::max(0.0f, _feedForwardWeights[v][hiddenCellIndex][wi] - recon);
                         }
                     }
                 }
@@ -115,9 +115,9 @@ void Layer::columnForward(int ci) {
         int hiddenCellIndex = ci + c * _hiddenWidth * _hiddenHeight;
 
         if (_codeIter == 0)
-            _hiddenActivations[hiddenCellIndex] = sigmoid(columnActivations[c]);
+            _hiddenActivations[hiddenCellIndex] = columnActivations[c];
         else
-            _hiddenActivations[hiddenCellIndex] *= sigmoid(columnActivations[c]);
+            _hiddenActivations[hiddenCellIndex] += columnActivations[c];
 
 		if (_hiddenActivations[hiddenCellIndex] > maxValue) {
             maxValue = _hiddenActivations[hiddenCellIndex];
@@ -255,7 +255,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
         _predictions[v][ci] = predIndex;
 
     if (_historySamples.size() == _maxHistorySamples && _learn) {
-        float q = columnActivations[_predictions[v][ci]];
+        float q = 0.0f;//columnActivations[_predictions[v][ci]];
 
         for (int t = 0; t < _historySamples.size() - 1; t++) {
             const HistorySample &s = _historySamples[t];            
