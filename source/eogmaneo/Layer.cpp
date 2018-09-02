@@ -117,7 +117,7 @@ void Layer::columnForward(int ci) {
         if (_codeIter == 0)
             _hiddenActivations[hiddenCellIndex] = columnActivations[c];
         else
-            _hiddenActivations[hiddenCellIndex] += columnActivations[c];
+            _hiddenActivations[hiddenCellIndex] += columnActivations[c] * std::pow(0.5f, _codeIter);
 
 		if (_hiddenActivations[hiddenCellIndex] > maxValue) {
             maxValue = _hiddenActivations[hiddenCellIndex];
