@@ -187,10 +187,15 @@ namespace eogmaneo {
         int _maxHistorySamples;
 
         /*!
+        \brief Maximum number of history samples.
+        */
+        int _replayIters;
+
+        /*!
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.005f), _beta(0.05f), _gamma(0.99f), _epsilon(0.01f), _codeIters(4), _maxHistorySamples(8)
+        : _alpha(0.005f), _beta(0.05f), _gamma(0.99f), _epsilon(0.01f), _codeIters(4), _maxHistorySamples(512), _replayIters(16)
         {}
 
         /*!
