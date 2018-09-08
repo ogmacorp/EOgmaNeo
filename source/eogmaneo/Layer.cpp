@@ -436,18 +436,18 @@ void Layer::forward(ComputeSystem &cs, const std::vector<std::vector<int>> &inpu
 
     _hiddenStatesPrev = _hiddenStates;
 
-    // Clear recons
-    _recons.clear();
-    _recons.resize(_visibleLayerDescs.size());
-
-    for (int v = 0; v < _visibleLayerDescs.size(); v++)
-        _recons[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height * _visibleLayerDescs[v]._columnSize, 0.0f);
-    
-    _reconCounts = _recons;
-
     // Several inhibition iterations
     for (int it = 0; it < _codeIters; it++) {
         _codeIter = it;
+
+        // Clear recons
+        _recons.clear();
+        _recons.resize(_visibleLayerDescs.size());
+
+        for (int v = 0; v < _visibleLayerDescs.size(); v++)
+            _recons[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height * _visibleLayerDescs[v]._columnSize, 0.0f);
+        
+        _reconCounts = _recons;
 
         for (int ci = 0; ci < _hiddenStates.size(); ci++) {
             std::shared_ptr<LayerForwardWorkItem> item = std::make_shared<LayerForwardWorkItem>();
