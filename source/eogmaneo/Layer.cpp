@@ -248,15 +248,13 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
     if (_historySamples.size() == _valueHorizon && _learn) {
         // Reward sum
-        float rSum = 0.0f;
+        float q = 0.0f;
         
         for (int t = 0; t < _valueHorizon - 1; t++) {
             const HistorySample &s = _historySamples[t];
             
-            rSum += s._reward * std::pow(_gamma, _valueHorizon - 2 - t);
+            q += s._reward + _gamma * q;
         }
-
-        //rSum /= _valueHorizon;
 
         const HistorySample &s = _historySamples[_valueHorizon - 2];
         const HistorySample &sPrev = _historySamples[_valueHorizon - 1];
@@ -296,7 +294,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
         sColumnActivationPrev *= rescale;
 
         // Learn
-        float update = _beta * (rSum - sColumnActivationPrev);
+        float update = _beta * (q - sColumnActivationPrev);
         
         for (int dcx = -backwardRadius; dcx <= backwardRadius; dcx++)
             for (int dcy = -backwardRadius; dcy <= backwardRadius; dcy++) {
@@ -343,8 +341,8 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
     
     _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
 
-    std::uniform_real_distribution<float> initWeightDistLow(-0.0001f, 0.0001f);
-    std::uniform_real_distribution<float> initWeightDistHigh(0.99f, 1.0f);
+    std::uniform_real_distribution<float> initWeightDistLow(-0.1f, 0.0f);
+    std::uniform_real_distribution<float> initWeightDistHigh(0.9f, 1.0f);
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         _inputs[v].resize(_visibleLayerDescs[v]._width * _visibleLayerDescs[v]._height, 0);
