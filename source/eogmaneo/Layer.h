@@ -131,18 +131,10 @@ namespace eogmaneo {
         
         std::vector<std::vector<int>> _inputs;
         std::vector<std::vector<int>> _inputsPrev;
-
-        std::vector<std::vector<float>> _recons;
-        std::vector<std::vector<float>> _reconCounts;
-
-        std::vector<std::vector<float>> _reconsActLearn;
-        std::vector<std::vector<float>> _reconCountsActLearn;
         
         std::vector<int> _feedBack;
 
         bool _learn;
-
-        int _codeIter;
         
         std::vector<HistorySample> _historySamples;
   
@@ -172,11 +164,6 @@ namespace eogmaneo {
         float _gamma;
 
         /*!
-        \brief Sparse coding iterations.
-        */
-        int _codeIters;
-
-        /*!
         \brief Maximum number of history samples.
         */
         int _maxHistorySamples;
@@ -190,7 +177,7 @@ namespace eogmaneo {
         \brief Initialize defaults.
         */
         Layer()
-        : _alpha(0.1f), _beta(0.05f), _gamma(0.9f), _codeIters(4), _maxHistorySamples(1024), _replayIters(16)
+        : _alpha(0.1f), _beta(0.1f), _gamma(0.99f), _maxHistorySamples(1024), _replayIters(16)
         {}
 
         /*!
