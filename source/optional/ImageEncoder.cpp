@@ -53,12 +53,9 @@ void ImageEncoder::create(int inputWidth, int inputHeight, int hiddenWidth, int 
 	int units = _hiddenWidth * _hiddenHeight * _columnSize;
 
     _weightsFF.resize(units * weightsPerUnit);
-    _weightsR.resize(_weightsFF.size());
 
-    for (int w = 0; w < _weightsFF.size(); w++) {
+    for (int w = 0; w < _weightsFF.size(); w++)
         _weightsFF[w] = weightDistHigh(rng);
-        _weightsR[w] = weightDistLow(rng);
-    }
 
     _biases.resize(units, 0.0f);
 
@@ -159,6 +156,26 @@ void ImageEncoder::activate(int cx, int cy) {
         // Compute value
         float value = _biases[ui];
 
+        float center = 0.0f;
+        float count = 0.0f;
+
+        for (int sx = 0; sx < diam; sx++)
+            for (int sy = 0; sy < diam; sy++) {
+                int index = sx + sy * diam;
+
+                int vx = lowerX + sx;
+                int vy = lowerY + sy;
+
+                if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                    int ii = vx + vy * _inputWidth;
+
+                    center += _inputs[ii];
+                    count += 1.0f;
+                }
+            }
+
+        center /= std::max(1.0f, count);
+
         for (int sx = 0; sx < diam; sx++)
             for (int sy = 0; sy < diam; sy++) {
                 int index = sx + sy * diam;
@@ -170,7 +187,7 @@ void ImageEncoder::activate(int cx, int cy) {
                     int wi = index + weightsPerUnit * ui;
                     int ii = vx + vy * _inputWidth;
 
-                    value += _inputs[ii] * _weightsFF[wi];
+                    value += (_inputs[ii] - center) * _weightsFF[wi];
                 }
             }
 
@@ -217,7 +234,7 @@ void ImageEncoder::reconstruct(int cx, int cy) {
                 int wi = index + weightsPerUnit * ui;
                 int ii = vx + vy * _inputWidth;
 
-                _recons[ii] += _weightsR[wi];
+                _recons[ii] += _weightsFF[wi];
                 _counts[ii] += 1.0f;
             }
         }
@@ -262,7 +279,7 @@ void ImageEncoder::learn(int cx, int cy, float alpha, float beta) {
                 int wi = index + weightsPerUnit * ui;
                 int ii = vx + vy * _inputWidth;
 
-                _weightsR[wi] += beta * (_inputs[ii] - _recons[ii]);
+                _weightsFF[wi] += beta * (_inputs[ii] - _weightsFF[wi]);
             }
         }
 }

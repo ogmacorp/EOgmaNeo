@@ -81,7 +81,6 @@ namespace eogmaneo {
         std::vector<float> _hiddenActivations;
 
         std::vector<float> _weightsFF;
-        std::vector<float> _weightsR;
         std::vector<float> _biases;
 
 		void activate(int cx, int cy);
