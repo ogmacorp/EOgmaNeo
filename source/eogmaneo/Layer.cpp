@@ -179,7 +179,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
 
     if (_historySamples.size() == _valueHorizon && _learn) {
         // Reward sum
-        float q = 0.0f;
+        float q = columnActivations[predIndex];
         
         for (int t = 0; t < _valueHorizon - 1; t++) {
             const HistorySample &s = _historySamples[t];
