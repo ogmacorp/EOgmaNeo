@@ -184,7 +184,7 @@ void Layer::columnBackward(int ci, int v, std::mt19937 &rng) {
         for (int t = 0; t < _valueHorizon - 1; t++) {
             const HistorySample &s = _historySamples[t];
             
-            q += s._reward + _gamma * q;
+            q = s._reward + _gamma * q;
         }
 
         const HistorySample &s = _historySamples[_valueHorizon - 2];
