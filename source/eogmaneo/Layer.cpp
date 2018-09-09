@@ -270,8 +270,6 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
 
     _hiddenStates.resize(_hiddenWidth * _hiddenHeight, 0);
     
-    _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
-
     std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
     std::uniform_real_distribution<float> initWeightDistHigh(0.9f, 1.0f);
     std::uniform_real_distribution<float> initWeightDistLow(-0.001f, 0.001f);
@@ -424,8 +422,6 @@ void Layer::readFromStream(std::istream &is) {
     // If feedback is -1, clear to empty
     if (_feedBack.front() == -1)
         _feedBack.clear();
-
-    _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
