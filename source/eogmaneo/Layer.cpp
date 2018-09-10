@@ -70,7 +70,7 @@ void Layer::columnForward(int ci) {
                         for (int c = 0; c < _visibleLayerDescs[v]._columnSize; c++) {
                             int wi = (cx - lowerVisibleX) + (cy - lowerVisibleY) * forwardDiam + c * forwardSize;
 
-                            float d = (c == inputIndexPrev ? 0.0f : -_alpha);
+                            float d = (c == inputIndexPrev ? 0.0f : -_alpha * _feedForwardWeights[v][hiddenCellIndexPrev][wi]);
 
                             _feedForwardWeights[v][hiddenCellIndexPrev][wi] = std::max(0.0f, _feedForwardWeights[v][hiddenCellIndexPrev][wi] + d);
                         }
@@ -301,8 +301,6 @@ void Layer::create(int hiddenWidth, int hiddenHeight, int columnSize, const std:
 
     _hiddenStates.resize(_hiddenWidth * _hiddenHeight, 0);
     
-    _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
-
     std::uniform_real_distribution<float> dist01(0.0f, 1.0f);
     std::uniform_real_distribution<float> initWeightDistLow(-0.01f, 0.01f);
     std::uniform_real_distribution<float> initWeightDistHigh(0.99f, 1.0f);
@@ -455,8 +453,6 @@ void Layer::readFromStream(std::istream &is) {
     // If feedback is -1, clear to empty
     if (_feedBack.front() == -1)
         _feedBack.clear();
-
-    _hiddenActivations.resize(_hiddenStates.size() * _columnSize, 0.0f);
 
     for (int v = 0; v < _visibleLayerDescs.size(); v++) {
         // Visible layer data
