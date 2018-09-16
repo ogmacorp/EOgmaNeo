@@ -267,6 +267,26 @@ void ImageEncoder::learn(int cx, int cy, float alpha, float beta) {
 
     int ui = cx + cy * _hiddenWidth + c * _hiddenWidth * _hiddenHeight;
 
+    float center = 0.0f;
+    float count = 0.0f;
+
+    for (int sx = 0; sx < diam; sx++)
+        for (int sy = 0; sy < diam; sy++) {
+            int index = sx + sy * diam;
+
+            int vx = lowerX + sx;
+            int vy = lowerY + sy;
+
+            if (vx >= 0 && vy >= 0 && vx < _inputWidth && vy < _inputHeight) {
+                int ii = vx + vy * _inputWidth;
+
+                center += _inputs[ii];
+                count += 1.0f;
+            }
+        }
+
+    center /= std::max(1.0f, count);
+    
     // Compute value
     for (int sx = 0; sx < diam; sx++)
         for (int sy = 0; sy < diam; sy++) {
@@ -279,7 +299,7 @@ void ImageEncoder::learn(int cx, int cy, float alpha, float beta) {
                 int wi = index + weightsPerUnit * ui;
                 int ii = vx + vy * _inputWidth;
 
-                _weightsFF[wi] += beta * (_inputs[ii] - _weightsFF[wi]);
+                _weightsFF[wi] += beta * ((_inputs[ii] - center) - _weightsFF[wi]);
             }
         }
 }
