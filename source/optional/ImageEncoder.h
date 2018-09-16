@@ -28,9 +28,25 @@ namespace eogmaneo {
 			: _pEncoder(nullptr)
 		{}
 
-		void run(size_t threadIndex) override;
+		void run() override;
 	};
 	
+    /*!
+    \brief Image encoder work item. Internal use only.
+    */
+	class ImageEncoderReconstructWorkItem : public WorkItem {
+	public:
+		ImageEncoder* _pEncoder;
+
+		int _cx, _cy;
+
+		ImageEncoderReconstructWorkItem()
+			: _pEncoder(nullptr)
+		{}
+
+		void run() override;
+	};
+
     /*!
     \brief Image learn work item. Internal use only.
     */
@@ -40,13 +56,14 @@ namespace eogmaneo {
 
         int _cx, _cy;
 
+        float _alpha;
         float _beta;
 
         ImageEncoderLearnWorkItem()
             : _pEncoder(nullptr)
         {}
 
-        void run(size_t threadIndex) override;
+        void run() override;
     };
 	
     /*!
@@ -60,16 +77,19 @@ namespace eogmaneo {
         int _radius;
 
         std::vector<int> _hiddenStates;
+        std::vector<int> _reconHiddenStates;
         std::vector<float> _hiddenActivations;
 
-        std::vector<float> _weights;
+        std::vector<float> _weightsFF;
         std::vector<float> _biases;
 
 		void activate(int cx, int cy);
 		void reconstruct(int cx, int cy);
-        void learn(int cx, int cy, float beta);
+        void learn(int cx, int cy, float _alpha, float beta);
 
 		std::vector<float> _inputs;
+		std::vector<float> _recons;
+		std::vector<float> _counts;
 		
     public:
         /*!
@@ -89,15 +109,25 @@ namespace eogmaneo {
         \brief Activate the encoder from an input (compute hidden states, perform encoding).
         \param cs compute system to be used.
         \param input input vector/image.
+        \return hidden SDR
         */
         const std::vector<int> &activate(ComputeSystem &cs, const std::vector<float> &inputs);
 
         /*!
-        \brief Experimental learning functionality.
+        \brief Reconstruction (reversal).
         \param cs compute system to be used.
-        \param beta bias learning rate.
+        \param reconHiddenStates hidden states to reconstruct.
+        \return reconstruction
         */
-        void learn(ComputeSystem &cs, float beta);
+        const std::vector<float> &reconstruct(ComputeSystem &cs, const std::vector<int> &reconHiddenStates);
+
+        /*!
+        \brief Learning.
+        \param cs compute system to be used.
+        \param alpha bias learning rate.
+        \param beta reconstruction learning rate.
+        */
+        void learn(ComputeSystem &cs, float alpha, float beta);
 
         //!@{
         /*!
@@ -144,6 +174,13 @@ namespace eogmaneo {
         */
         const std::vector<int> &getHiddenStates() const {
             return _hiddenStates;
+        }
+
+        /*!
+        \brief Get lastly computed reconstuction.
+        */
+        const std::vector<float> &getRecons() const {
+            return _recons;
         }
 		
 		friend class ImageEncoderActivateWorkItem;

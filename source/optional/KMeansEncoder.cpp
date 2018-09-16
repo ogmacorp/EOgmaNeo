@@ -15,15 +15,15 @@
 
 using namespace eogmaneo;
 
-void KMeansEncoderActivateWorkItem::run(size_t threadIndex) {
+void KMeansEncoderActivateWorkItem::run() {
 	_pEncoder->activate(_cx, _cy);
 }
 
-void KMeansEncoderReconstructWorkItem::run(size_t threadIndex) {
+void KMeansEncoderReconstructWorkItem::run() {
 	_pEncoder->reconstruct(_cx, _cy);
 }
 
-void KMeansEncoderLearnWorkItem::run(size_t threadIndex) {
+void KMeansEncoderLearnWorkItem::run() {
     _pEncoder->learn(_cx, _cy, _alpha);
 }
 

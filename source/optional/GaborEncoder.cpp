@@ -15,11 +15,11 @@
 
 using namespace eogmaneo;
 
-void GaborEncoderActivateWorkItem::run(size_t threadIndex) {
+void GaborEncoderActivateWorkItem::run() {
 	_pEncoder->activate(_cx, _cy);
 }
 
-void GaborEncoderReconstructWorkItem::run(size_t threadIndex) {
+void GaborEncoderReconstructWorkItem::run() {
 	_pEncoder->reconstruct(_cx, _cy);
 }
 
