@@ -15,7 +15,7 @@ Welcome to the EOgmaNeo library!
 
 EOgmaNeo is Ogma Corp's embedded and event based version of [OgmaNeo](https://github.com/ogmacorp/OgmaNeo)
 
-It is our _primary_ and _preferred_ implementation of Sparse Predictive Hierarchies, a fully online sequence predictor.
+~~It is our primary and preferred implementation of Sparse Predictive Hierarchies, a fully online sequence predictor.~~ This is no longer the case, please use [OgmaNeo2](https://github.com/ogmacorp/OgmaNeo2).
 
 EOgmaNeo currently runs exclusive on the CPU, unlike OgmaNeo. However, for most tasks, it is much faster. It also performs better in terms of end-result.
 
